@@ -1,0 +1,54 @@
+{
+  "name": "konfigurator/network",
+  "homepage": "https://github.com/Nicodinus/Konfigurator-Network",
+  "description": "",
+  "type": "lib",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Nicodinus",
+      "email": "nicodinus@yandex.ru"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Konfigurator\\Network\\": "lib"
+    },
+    "files": ["lib/functions.php"]
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Konfigurator\\Network\\Test\\": "test"
+    }
+  },
+  "repositories": [
+	  {
+		"type": "path", 
+		"url": "../Common",
+		"symlink": true
+	  }
+  ],
+  "require": {
+    "php": ">=7.4.2",
+    "psr/log": "^1.1",
+    "amphp/amp": "^2.5",
+    "amphp/socket": "^1.1",
+    "myclabs/php-enum": "^1.7",
+	"ramsey/uuid": "^4.0",
+    "konfigurator/common": "dev-master",
+    "symfony/polyfill-php80": "^1.18"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^9"
+  },
+  "config": {
+    "platform": {
+      "php": "7.4.2"
+    }
+  },
+  "scripts": {
+    "test": "@php -dzend.assertions=1 -dassert.exception=1 ./vendor/bin/phpunit"
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}
