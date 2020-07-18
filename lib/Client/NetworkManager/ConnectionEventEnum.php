@@ -4,7 +4,7 @@
 namespace Konfigurator\Network\Client\NetworkManager;
 
 
-use Konfigurator\Enums\EventEnum;
+use Konfigurator\Common\Enums\EventEnum;
 
 /**
  * Class ConnectionEventEnum
