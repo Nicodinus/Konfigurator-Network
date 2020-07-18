@@ -7,6 +7,8 @@ namespace Konfigurator\Network\Client\Session;
 use Amp\Promise;
 use Konfigurator\Network\Client\ClientNetworkManagerInterface;
 use Konfigurator\Network\NetworkManagerInterface;
+use Konfigurator\Network\Packets\PacketHandlerInterface;
+use Konfigurator\Network\Packets\PacketInterface;
 use Konfigurator\Network\Session\SessionManagerInterface;
 
 interface ClientSessionManagerInterface extends SessionManagerInterface
@@ -22,10 +24,10 @@ interface ClientSessionManagerInterface extends SessionManagerInterface
     public function getNetworkManager(): NetworkManagerInterface;
 
     /**
-     * @param string|\Stringable $packet
+     * @param PacketInterface $packet
      * @return Promise<void>
      */
-    public function sendPacket($packet): Promise;
+    public function sendPacket(PacketInterface $packet): Promise;
 
     /**
      * @return void

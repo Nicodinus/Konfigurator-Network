@@ -167,6 +167,8 @@ class ServerNetworkManager extends AbstractNetworkManager implements ServerNetwo
 
             $self->notifyEventAcceptor(ClientEventEnum::CONNECTED()->setRemoteAddress($remoteAddr));
 
+            yield new Delayed(0);
+
             try {
 
                 while (!$socket->isClosed()) {
@@ -177,6 +179,8 @@ class ServerNetworkManager extends AbstractNetworkManager implements ServerNetwo
                         yield new Delayed(0);
                         continue;
                     }
+
+                    $self->getLogger()->debug("RECV: packet length " . strlen($packet));
 
                     $self->notifyEventAcceptor(ClientEventEnum::PACKET_RECEIVED()->setRemoteAddress($remoteAddr)->withEventData($packet));
 
@@ -201,6 +205,8 @@ class ServerNetworkManager extends AbstractNetworkManager implements ServerNetwo
             $self->getLogger()->debug("Client socket {$remoteAddr} removed!");
 
             $self->notifyEventAcceptor(ClientEventEnum::DISCONNECTED()->setRemoteAddress($remoteAddr));
+
+            yield new Delayed(0);
 
         }, $this, $socket);
     }
@@ -246,6 +252,8 @@ class ServerNetworkManager extends AbstractNetworkManager implements ServerNetwo
             if (!$socket) {
                 return new Failure(new \LogicException("Invalid client socket {$remoteAddr}!"));
             }
+
+            $self->getLogger()->debug("SEND: packet length " . strlen($packet));
 
             yield $socket->write($packet);
 

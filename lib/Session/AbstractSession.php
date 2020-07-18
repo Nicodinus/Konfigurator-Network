@@ -21,6 +21,9 @@ abstract class AbstractSession implements SessionInterface, ClassHasLogger
     /** @var LoggerInterface */
     private LoggerInterface $logger;
 
+    /** @var SessionStorageInterface */
+    private SessionStorageInterface $storage;
+
     /** @var string|float|int|bool|null */
     private $id;
 
@@ -33,9 +36,26 @@ abstract class AbstractSession implements SessionInterface, ClassHasLogger
     {
         $this->sessionManager = $sessionManager;
         $this->logger = new NullLogger();
+        $this->storage = $this->createStorage();
 
         $this->id = $this->_getId();
         static::$aliveSessionIds[] = $this->id;
+    }
+
+    /**
+     * @return SessionStorageInterface
+     */
+    protected function createStorage(): SessionStorageInterface
+    {
+        return new SessionStorage($this);
+    }
+
+    /**
+     * @return SessionStorageInterface
+     */
+    public function getStorage(): SessionStorageInterface
+    {
+        return $this->storage;
     }
 
     /**

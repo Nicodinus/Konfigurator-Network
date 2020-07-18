@@ -99,6 +99,8 @@ abstract class AbstractNetworkManager implements NetworkManagerInterface, ClassH
     {
         asyncCall(static function (self $self, $event) {
 
+            yield new Delayed(0);
+
             if (!empty($self->eventAcceptor)) {
 
                 $self->eventAcceptor->resolve($event);

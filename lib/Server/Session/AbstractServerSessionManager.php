@@ -8,6 +8,8 @@ use Amp\Delayed;
 use Amp\Promise;
 use Amp\Socket\SocketAddress;
 use Konfigurator\Network\NetworkManagerInterface;
+use Konfigurator\Network\Packets\PacketHandlerInterface;
+use Konfigurator\Network\Packets\PacketInterface;
 use Konfigurator\Network\Server\NetworkManager\ClientEventEnum;
 use Konfigurator\Network\Server\NetworkManager\ServerEventEnum;
 use Konfigurator\Network\Server\ServerNetworkManagerInterface;
@@ -18,7 +20,10 @@ use function Amp\call;
 abstract class AbstractServerSessionManager extends AbstractSessionManager implements ServerSessionManagerInterface
 {
     /** @var ServersideClientSessionInterface[] */
-    protected array $sessions;
+    private array $sessions;
+
+    /** @var PacketHandlerInterface */
+    private PacketHandlerInterface $packetHandler;
 
 
     /**
@@ -30,7 +35,14 @@ abstract class AbstractServerSessionManager extends AbstractSessionManager imple
         parent::__construct($networkManager);
 
         $this->sessions = [];
+
+        $this->packetHandler = $this->createPacketHandler();
     }
+
+    /**
+     * @return PacketHandlerInterface
+     */
+    protected abstract function createPacketHandler(): PacketHandlerInterface;
 
     /**
      * @param SocketAddress $peer
@@ -60,6 +72,14 @@ abstract class AbstractServerSessionManager extends AbstractSessionManager imple
     }
 
     /**
+     * @return PacketHandlerInterface
+     */
+    public function getPacketHandler(): PacketHandlerInterface
+    {
+        return $this->packetHandler;
+    }
+
+    /**
      * @return Promise
      */
     public function handle(): Promise
@@ -75,14 +95,21 @@ abstract class AbstractServerSessionManager extends AbstractSessionManager imple
                     continue;
                 }
 
-                $self->getLogger()->debug("Handle event: {$event->getValue()}", [
-                    'event' => $event,
-                ]);
-
                 if (!($event instanceof ClientEventEnum) || !$event->getRemoteAddress()) {
+
+                    $self->getLogger()->debug("Event skipped: {$event->getValue()}", [
+                        'event' => $event,
+                    ]);
+
                     yield new Delayed(0);
                     continue;
+
                 }
+
+                $self->getLogger()->debug("Handle event: {$event->getValue()}", [
+                    'event' => $event,
+                    'address' => $event->getRemoteAddress(),
+                ]);
 
                 asyncCall(static function (self $self, ClientEventEnum $event) {
 
@@ -94,17 +121,20 @@ abstract class AbstractServerSessionManager extends AbstractSessionManager imple
                         {
                             case ClientEventEnum::CONNECTED()->getValue():
                                 //$self->getLogger()->debug("A new client {$peer} connected!");
-                                $self->registerClient($peer)->onConnected();
+                                //$self->registerClient($peer)->onConnected();
+                                $self->registerClient($peer);
                                 break;
                             case ClientEventEnum::DISCONNECTED()->getValue():
                                 //$self->getLogger()->debug("Client {$peer} disconnected!");
-                                $self->getClientSession($peer)->onDisconnected();
+                                //$self->getClientSession($peer)->onDisconnected();
                                 $self->removeClient($peer);
                                 break;
                             case ClientEventEnum::PACKET_RECEIVED()->getValue():
-                                $packet = $event->getEventData();
                                 //$self->getLogger()->debug("Recv packet from {$peer} length " . strlen($packet));
-                                $self->getClientSession($peer)->handlePacket($packet);
+                                $packet = $self->getPacketHandler()
+                                    ->handleRemotePacket($self->getClientSession($peer), $event->getEventData());
+                                $self->getClientSession($peer)->handle($packet);
+                                //$self->getClientSession($peer)->handlePacket($event->getEventData());
                                 break;
                         }
 
@@ -136,11 +166,13 @@ abstract class AbstractServerSessionManager extends AbstractSessionManager imple
 
     /**
      * @param SocketAddress $address
-     * @param string|\Stringable $packet
+     * @param PacketInterface $packet
      * @return Promise<void>
      */
-    public function sendPacket(SocketAddress $address, $packet): Promise
+    public function sendPacket(SocketAddress $address, PacketInterface $packet): Promise
     {
+        $packet = $this->getPacketHandler()->handleLocalPacket($packet);
+
         return $this->getNetworkManager()->sendPacket($address, $packet);
     }
 
@@ -150,6 +182,10 @@ abstract class AbstractServerSessionManager extends AbstractSessionManager imple
      */
     public function disconnect(SocketAddress $address): void
     {
+        if ($this->getClientSession($address)) {
+            $this->removeClient($address);
+        }
+
         $this->getNetworkManager()->disconnect($address);
     }
 

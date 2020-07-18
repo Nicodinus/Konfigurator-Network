@@ -7,6 +7,7 @@ namespace Konfigurator\Network\Server\Session;
 use Amp\Promise;
 use Amp\Socket\SocketAddress;
 use Konfigurator\Network\NetworkManagerInterface;
+use Konfigurator\Network\Packets\PacketInterface;
 use Konfigurator\Network\Server\ServerNetworkManagerInterface;
 use Konfigurator\Network\Session\AbstractSession;
 use Konfigurator\Network\Session\SessionManagerInterface;
@@ -38,12 +39,21 @@ abstract class AbstractServersideClientSession extends AbstractSession implement
     }
 
     /**
-     * @param string|\Stringable $packet
+     * @param PacketInterface $packet
      * @return Promise<void>
      */
-    public function sendPacket($packet): Promise
+    public function sendPacket(PacketInterface $packet): Promise
     {
         return $this->getSessionManager()->sendPacket($this->remoteAddress, $packet);
+    }
+
+    /**
+     * @param string $classname
+     * @return PacketInterface
+     */
+    public function createPacket(string $classname): PacketInterface
+    {
+        return $this->getSessionManager()->getPacketHandler()->createPacket($this, $classname);
     }
 
     /**

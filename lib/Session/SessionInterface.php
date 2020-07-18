@@ -4,6 +4,9 @@
 namespace Konfigurator\Network\Session;
 
 
+use Amp\Promise;
+use Konfigurator\Network\Packets\PacketInterface;
+
 interface SessionInterface
 {
     /**
@@ -12,18 +15,30 @@ interface SessionInterface
     public function getId();
 
     /**
-     * @param string $packet
+     * @param PacketInterface $packet
      * @return void
      */
-    public function handlePacket(string $packet): void;
+    public function handle(PacketInterface $packet): void;
 
     /**
-     * @return void
+     * @return SessionStorageInterface
      */
-    public function onConnected(): void;
+    public function getStorage(): SessionStorageInterface;
 
     /**
-     * @return void
+     * @return SessionManagerInterface
      */
-    public function onDisconnected(): void;
+    public function getSessionManager(): SessionManagerInterface;
+
+    /**
+     * @param PacketInterface $packet
+     * @return Promise<void>
+     */
+    public function sendPacket(PacketInterface $packet): Promise;
+
+    /**
+     * @param string $classname
+     * @return PacketInterface
+     */
+    public function createPacket(string $classname): PacketInterface;
 }

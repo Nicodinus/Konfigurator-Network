@@ -4,8 +4,10 @@
 namespace Konfigurator\Network\Client\Session;
 
 
+use Amp\Promise;
 use Konfigurator\Network\Client\ClientNetworkManagerInterface;
 use Konfigurator\Network\NetworkManagerInterface;
+use Konfigurator\Network\Packets\PacketInterface;
 use Konfigurator\Network\Session\AbstractSession;
 use Konfigurator\Network\Session\SessionManagerInterface;
 
@@ -26,6 +28,24 @@ abstract class AbstractClientSession extends AbstractSession implements ClientSe
     public function getNetworkManager(): NetworkManagerInterface
     {
         return parent::getNetworkManager();
+    }
+
+    /**
+     * @param PacketInterface $packet
+     * @return Promise<void>
+     */
+    public function sendPacket(PacketInterface $packet): Promise
+    {
+        return $this->getSessionManager()->sendPacket($packet);
+    }
+
+    /**
+     * @param string $classname
+     * @return PacketInterface
+     */
+    public function createPacket(string $classname): PacketInterface
+    {
+        return $this->getSessionManager()->getPacketHandler()->createPacket($this, $classname);
     }
 
     /**

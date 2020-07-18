@@ -6,6 +6,7 @@ namespace Konfigurator\Network\Session;
 
 use Amp\Promise;
 use Konfigurator\Network\NetworkManagerInterface;
+use Konfigurator\Network\Packets\PacketHandlerInterface;
 
 interface SessionManagerInterface
 {
@@ -28,4 +29,9 @@ interface SessionManagerInterface
      * @return NetworkManagerInterface
      */
     public function getNetworkManager(): NetworkManagerInterface;
+
+    /**
+     * @return PacketHandlerInterface
+     */
+    public function getPacketHandler(): PacketHandlerInterface;
 }

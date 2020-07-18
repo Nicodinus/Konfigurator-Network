@@ -9,6 +9,8 @@ use Amp\Promise;
 use Konfigurator\Network\Client\ClientNetworkManagerInterface;
 use Konfigurator\Network\Client\NetworkManager\ConnectionEventEnum;
 use Konfigurator\Network\NetworkManagerInterface;
+use Konfigurator\Network\Packets\PacketHandlerInterface;
+use Konfigurator\Network\Packets\PacketInterface;
 use Konfigurator\Network\Session\AbstractSessionManager;
 use function Amp\asyncCall;
 use function Amp\call;
@@ -16,7 +18,10 @@ use function Amp\call;
 abstract class AbstractClientSessionManager extends AbstractSessionManager implements ClientSessionManagerInterface
 {
     /** @var ClientSessionInterface|null */
-    protected ?ClientSessionInterface $session;
+    private ?ClientSessionInterface $session;
+
+    /** @var PacketHandlerInterface */
+    private PacketHandlerInterface $packetHandler;
 
     /**
      * AbstractClientSession constructor.
@@ -27,6 +32,8 @@ abstract class AbstractClientSessionManager extends AbstractSessionManager imple
         parent::__construct($networkManager);
 
         $this->session = null;
+
+        $this->packetHandler = $this->createPacketHandler();
     }
 
     /**
@@ -56,13 +63,18 @@ abstract class AbstractClientSessionManager extends AbstractSessionManager imple
                         switch ($event->getValue())
                         {
                             case ConnectionEventEnum::CONNECTED()->getValue():
-                                $self->getClientSession()->onConnected();
+                                //$self->getClientSession()->onConnected();
+                                $self->session = $self->createClientSession();
                                 break;
                             case ConnectionEventEnum::DISCONNECTED()->getValue():
-                                $self->getClientSession()->onDisconnected();
+                                //$self->getClientSession()->onDisconnected();
+                                $self->removeClientSession();
                                 break;
                             case ConnectionEventEnum::PACKET_RECEIVED()->getValue():
-                                $self->getClientSession()->handlePacket($event->getEventData());
+                                //$self->getClientSession()->handlePacket($event->getEventData());
+                                $packet = $self->getPacketHandler()
+                                    ->handleRemotePacket($self->getClientSession(), $event->getEventData());
+                                $self->getClientSession()->handle($packet);
                                 break;
                         }
 
@@ -85,6 +97,11 @@ abstract class AbstractClientSessionManager extends AbstractSessionManager imple
     }
 
     /**
+     * @return PacketHandlerInterface
+     */
+    protected abstract function createPacketHandler(): PacketHandlerInterface;
+
+    /**
      * @return ClientNetworkManagerInterface
      */
     public function getNetworkManager(): NetworkManagerInterface
@@ -93,28 +110,43 @@ abstract class AbstractClientSessionManager extends AbstractSessionManager imple
     }
 
     /**
+     * @return PacketHandlerInterface
+     */
+    public function getPacketHandler(): PacketHandlerInterface
+    {
+        return $this->packetHandler;
+    }
+
+    /**
      * @return ClientSessionInterface
      */
     protected abstract function createClientSession(): ClientSessionInterface;
+
+    /**
+     * @return static
+     */
+    protected function removeClientSession(): self
+    {
+        unset($this->session);
+        $this->session = null;
+    }
 
     /**
      * @return ClientSessionInterface
      */
     public function getClientSession(): ClientSessionInterface
     {
-        if (!$this->session) {
-            $this->session = $this->createClientSession();
-        }
-
         return $this->session;
     }
 
     /**
-     * @param string|\Stringable $packet
+     * @param PacketInterface $packet
      * @return Promise<void>
      */
-    public function sendPacket($packet): Promise
+    public function sendPacket(PacketInterface $packet): Promise
     {
+        $packet = $this->getPacketHandler()->handleLocalPacket($packet);
+
         return $this->getNetworkManager()->sendPacket($packet);
     }
 
@@ -123,6 +155,10 @@ abstract class AbstractClientSessionManager extends AbstractSessionManager imple
      */
     public function disconnect(): void
     {
+        if ($this->session) {
+            $this->removeClientSession();
+        }
+
         $this->getNetworkManager()->disconnect();
     }
 }
