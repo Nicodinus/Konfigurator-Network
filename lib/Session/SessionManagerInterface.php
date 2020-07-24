@@ -4,27 +4,13 @@
 namespace Konfigurator\Network\Session;
 
 
-use Amp\Promise;
+use Konfigurator\Common\Interfaces\AsyncHandlerInterface;
+use Konfigurator\Common\Interfaces\GracefulShutdownPossible;
 use Konfigurator\Network\NetworkManagerInterface;
 use Konfigurator\Network\Packet\PacketHandlerInterface;
 
-interface SessionManagerInterface
+interface SessionManagerInterface extends AsyncHandlerInterface, GracefulShutdownPossible
 {
-    /**
-     * @return Promise<void>
-     */
-    public function handle(): Promise;
-
-    /**
-     * @return void
-     */
-    public function shutdown(): void;
-
-    /**
-     * @return bool
-     */
-    public function isShutdownPending(): bool;
-
     /**
      * @return NetworkManagerInterface
      */

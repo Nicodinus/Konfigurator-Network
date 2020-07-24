@@ -5,9 +5,6 @@ namespace Konfigurator\Network\Client\Session;
 
 
 use Amp\Promise;
-use Konfigurator\Network\Client\ClientNetworkManagerInterface;
-use Konfigurator\Network\NetworkManagerInterface;
-use Konfigurator\Network\Packet\PacketHandlerInterface;
 use Konfigurator\Network\Packet\PacketInterface;
 use Konfigurator\Network\Session\SessionManagerInterface;
 
@@ -17,11 +14,6 @@ interface ClientSessionManagerInterface extends SessionManagerInterface
      * @return ClientSessionInterface
      */
     public function getClientSession(): ClientSessionInterface;
-
-    /**
-     * @return ClientNetworkManagerInterface
-     */
-    public function getNetworkManager(): NetworkManagerInterface;
 
     /**
      * @param PacketInterface $packet

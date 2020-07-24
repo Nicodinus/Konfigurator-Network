@@ -33,59 +33,55 @@ abstract class AbstractClientSessionManager extends AbstractSessionManager imple
     /**
      * @return Promise
      */
-    public function handle(): Promise
+    protected function handleTick(): Promise
     {
         return call(static function (self &$self) {
 
-            while (!$self->isShutdownPending()) {
+            /** @var ConnectionEventEnum|null $event */
+            $event = yield $self->getNetworkManager()->awaitEvent();
+            if (!$event) {
+                yield new Delayed(0);
+                return;
+            }
 
-                /** @var ConnectionEventEnum|null $event */
-                $event = yield $self->getNetworkManager()->awaitEvent();
-                if (!$event) {
-                    yield new Delayed(0);
-                    continue;
-                }
+            $self->getLogger()->debug("Handle event: {$event->getValue()}", [
+                'event' => $event,
+            ]);
 
-                $self->getLogger()->debug("Handle event: {$event->getValue()}", [
-                    'event' => $event,
-                ]);
+            asyncCall(static function (self &$self, ConnectionEventEnum $event) {
 
-                asyncCall(static function (self &$self, ConnectionEventEnum $event) {
+                try {
 
-                    try {
-
-                        switch ($event->getValue())
-                        {
-                            case ConnectionEventEnum::CONNECTED()->getValue():
-                                //$self->getClientSession()->onConnected();
-                                $self->session = $self->createClientSession();
-                                break;
-                            case ConnectionEventEnum::DISCONNECTED()->getValue():
-                                //$self->getClientSession()->onDisconnected();
-                                $self->removeClientSession();
-                                break;
-                            case ConnectionEventEnum::PACKET_RECEIVED()->getValue():
-                                //$self->getClientSession()->handlePacket($event->getEventData());
-                                $packet = $self->getPacketHandler()
-                                    ->handlePacket($self->getClientSession(), $event->getEventData());
-                                $self->getClientSession()->handle($packet);
-                                break;
-                        }
-
-                    } catch (\Throwable $e) {
-
-                        $self->getLogger()->error("Handle exception", [
-                            'exception' => $e,
-                        ]);
-                        $self->disconnect();
-
+                    switch ($event->getValue())
+                    {
+                        case ConnectionEventEnum::CONNECTED()->getValue():
+                            //$self->getClientSession()->onConnected();
+                            $self->session = $self->createClientSession();
+                            break;
+                        case ConnectionEventEnum::DISCONNECTED()->getValue():
+                            //$self->getClientSession()->onDisconnected();
+                            $self->removeClientSession();
+                            break;
+                        case ConnectionEventEnum::PACKET_RECEIVED()->getValue():
+                            //$self->getClientSession()->handlePacket($event->getEventData());
+                            $packet = $self->getPacketHandler()
+                                ->handlePacket($self->getClientSession(), $event->getEventData());
+                            $self->getClientSession()->handle($packet);
+                            break;
                     }
 
-                }, $self, $event);
+                } catch (\Throwable $e) {
 
-                yield new Delayed(0);
+                    $self->getLogger()->error("Handle exception", [
+                        'exception' => $e,
+                    ]);
+                    $self->disconnect();
 
-            }
+                }
+
+            }, $self, $event);
+
+            yield new Delayed(0);
 
         }, $this);
     }

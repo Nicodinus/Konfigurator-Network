@@ -4,22 +4,18 @@
 namespace Konfigurator\Network\Session;
 
 
+use Konfigurator\Common\AbstractAsyncHandler;
 use Konfigurator\Common\Interfaces\ClassHasLogger;
+use Konfigurator\Common\Traits\ClassHasLoggerTrait;
 use Konfigurator\Network\NetworkManagerInterface;
 use Konfigurator\Network\Packet\PacketHandlerInterface;
-use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 
-abstract class AbstractSessionManager implements SessionManagerInterface, ClassHasLogger
+abstract class AbstractSessionManager extends AbstractAsyncHandler implements SessionManagerInterface, ClassHasLogger
 {
-    /** @var LoggerInterface */
-    private LoggerInterface $logger;
+    use ClassHasLoggerTrait;
 
     /** @var NetworkManagerInterface */
     private NetworkManagerInterface $networkManager;
-
-    /** @var bool */
-    private bool $isShutdownPending;
 
     /** @var PacketHandlerInterface */
     private PacketHandlerInterface $packetHandler;
@@ -31,48 +27,19 @@ abstract class AbstractSessionManager implements SessionManagerInterface, ClassH
      */
     public function __construct(NetworkManagerInterface $networkManager)
     {
-        $this->logger = new NullLogger();
         $this->networkManager = $networkManager;
-        $this->isShutdownPending = false;
         $this->packetHandler = $this->createPacketHandler();
     }
 
     /**
-     * @param LoggerInterface $logger
-     * @return static
+     * @param \Throwable $exception
+     * @param string|null $message
      */
-    public function setLogger(LoggerInterface $logger): self
+    protected function exceptionLoopHandler(\Throwable $exception, ?string $message = null): void
     {
-        $this->logger = $logger;
-        return $this;
-    }
-
-    /**
-     * @return LoggerInterface
-     */
-    public function getLogger(): LoggerInterface
-    {
-        return $this->logger;
-    }
-
-    /**
-     * @return void
-     */
-    public function shutdown(): void
-    {
-        if ($this->isShutdownPending()) {
-            return;
-        }
-
-        $this->isShutdownPending = true;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isShutdownPending(): bool
-    {
-        return $this->isShutdownPending;
+        $this->getLogger()->error($message ?? __CLASS__ . " throws an exception!", [
+            'exception' => $exception,
+        ]);
     }
 
     /**

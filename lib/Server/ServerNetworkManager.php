@@ -12,7 +12,6 @@ use Amp\Socket\ResourceSocket;
 use Amp\Socket\Server;
 use Amp\Socket\SocketAddress;
 use Amp\Success;
-use Konfigurator\Common\Enums\StateEnum;
 use Konfigurator\Common\Exceptions\PendingShutdownError;
 use Konfigurator\Network\AbstractNetworkManager;
 use Konfigurator\Network\Server\NetworkManager\ClientEventEnum;
@@ -48,14 +47,6 @@ class ServerNetworkManager extends AbstractNetworkManager implements ServerNetwo
     public function getClientSocket(SocketAddress $address): ?ResourceSocket
     {
         return $this->acceptedSockets[$address->toString()] ?? null;
-    }
-
-    /**
-     * @return ServerStateEnum
-     */
-    public function getState(): StateEnum
-    {
-        return parent::getState();
     }
 
     /**
@@ -113,6 +104,16 @@ class ServerNetworkManager extends AbstractNetworkManager implements ServerNetwo
             }
 
         }, $this, $address);
+    }
+
+    /**
+     * @return void
+     */
+    public function shutdown(): void
+    {
+        parent::shutdown();
+
+        $this->close();
     }
 
     /**
@@ -214,12 +215,8 @@ class ServerNetworkManager extends AbstractNetworkManager implements ServerNetwo
     /**
      * @return Promise<void>
      */
-    public function handle(): Promise
+    protected function handleTick(): Promise
     {
-        if ($this->isShutdownPending()) {
-            return new Failure(new PendingShutdownError());
-        }
-
         return call(static function (self &$self) {
 
             while ($self->getState()->equals(ServerStateEnum::LISTEN())) {

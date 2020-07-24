@@ -5,27 +5,33 @@ namespace Konfigurator\Network;
 
 
 use Amp\Delayed;
-use Amp\Loop;
-use Amp\Promise;
-use Konfigurator\Common\Interfaces\AppRunnableInterface;
+use Konfigurator\Common\AbstractLoopRunnable;
 use Konfigurator\Common\Interfaces\ClassHasLogger;
+use Konfigurator\Common\Traits\ClassHasLoggerTrait;
 use Konfigurator\Network\Session\SessionManagerInterface;
-use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
+use function Amp\asyncCall;
+use function Amp\Promise\all;
 
-abstract class AbstractNetworkRunnable implements ClassHasLogger, AppRunnableInterface
+abstract class AbstractNetworkRunnable extends AbstractLoopRunnable implements ClassHasLogger
 {
+    use ClassHasLoggerTrait;
+
     /** @var NetworkManagerInterface */
     private NetworkManagerInterface $networkManager;
 
     /** @var SessionManagerInterface */
     private SessionManagerInterface $sessionManager;
 
-    /** @var LoggerInterface */
-    private LoggerInterface $logger;
-
-    /** @var bool */
-    private bool $isShutdownPending;
+    /**
+     * @param \Throwable $exception
+     * @param string|null $message
+     */
+    protected function exceptionLoopHandler(\Throwable $exception, ?string $message = null): void
+    {
+        $this->getLogger()->error($message ?? __CLASS__ . " throws an exception!", [
+            'exception' => $exception,
+        ]);
+    }
 
 
     /**
@@ -33,29 +39,8 @@ abstract class AbstractNetworkRunnable implements ClassHasLogger, AppRunnableInt
      */
     public function __construct()
     {
-        $this->logger = new NullLogger();
-        $this->isShutdownPending = false;
-
         $this->networkManager = $this->createNetworkManager();
         $this->sessionManager = $this->createSessionManager($this->networkManager);
-    }
-
-    /**
-     * @param LoggerInterface $logger
-     * @return static
-     */
-    public function setLogger(LoggerInterface $logger): self
-    {
-        $this->logger = $logger;
-        return $this;
-    }
-
-    /**
-     * @return LoggerInterface
-     */
-    public function getLogger(): LoggerInterface
-    {
-        return $this->logger;
     }
 
     /**
@@ -86,54 +71,42 @@ abstract class AbstractNetworkRunnable implements ClassHasLogger, AppRunnableInt
     }
 
     /**
-     * @return bool
+     * @return void
      */
-    public function isShutdownPending(): bool
+    public function shutdown(): void
     {
-        return $this->isShutdownPending;
+        parent::shutdown();
+
+        $this->getSessionManager()->shutdown();
+        $this->getNetworkManager()->shutdown();
     }
 
     /**
-     * @param Promise $runnableAcceptor
      * @return void
      */
-    public function run(Promise $runnableAcceptor): void
+    protected function _run(): void
     {
-        $self = &$this;
+        asyncCall(static function (self &$self) {
 
-        Loop::defer(static function () use (&$self, $runnableAcceptor) {
+            try {
 
-            yield $runnableAcceptor;
+                yield all([
+                    $self->getSessionManager()->handle(),
+                    $self->getNetworkManager()->handle(),
+                ]);
 
-            $self->isShutdownPending = true;
+                yield new Delayed(0);
 
-            $self->getSessionManager()->shutdown();
-            $self->getNetworkManager()->shutdown();
+            } catch (\Throwable $exception) {
 
-        });
-
-        Loop::defer(static function () use (&$self) {
-
-            while (!$self->isShutdownPending()) {
-
-                yield $self->getSessionManager()->handle();
-
-                yield new Delayed(100);
+                $self->exceptionLoopHandler($exception);
 
             }
 
-        });
+            yield new Delayed(0);
 
-        Loop::defer(static function () use (&$self) {
+            $self->shutdown();
 
-            while (!$self->isShutdownPending()) {
-
-                yield $self->getNetworkManager()->handle();
-
-                yield new Delayed(100);
-
-            }
-
-        });
+        }, $this);
     }
 }

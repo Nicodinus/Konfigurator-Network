@@ -63,76 +63,72 @@ abstract class AbstractServerSessionManager extends AbstractSessionManager imple
     /**
      * @return Promise
      */
-    public function handle(): Promise
+    protected function handleTick(): Promise
     {
         return call(static function (self &$self) {
 
-            while (!$self->isShutdownPending()) {
+            /** @var ServerEventEnum $event */
+            $event = yield $self->getNetworkManager()->awaitEvent();
+            if (!$event) {
+                yield new Delayed(0);
+                return;
+            }
 
-                /** @var ServerEventEnum $event */
-                $event = yield $self->getNetworkManager()->awaitEvent();
-                if (!$event) {
-                    yield new Delayed(0);
-                    continue;
-                }
+            if (!($event instanceof ClientEventEnum) || !$event->getRemoteAddress()) {
 
-                if (!($event instanceof ClientEventEnum) || !$event->getRemoteAddress()) {
-
-                    $self->getLogger()->debug("Event skipped: {$event->getValue()}", [
-                        'event' => $event,
-                    ]);
-
-                    yield new Delayed(0);
-                    continue;
-
-                }
-
-                $self->getLogger()->debug("Handle event: {$event->getValue()}", [
+                $self->getLogger()->debug("Event skipped: {$event->getValue()}", [
                     'event' => $event,
-                    'address' => $event->getRemoteAddress(),
                 ]);
 
-                asyncCall(static function (self &$self, ClientEventEnum $event) {
-
-                    $peer = $event->getRemoteAddress();
-
-                    try {
-
-                        switch ($event->getValue())
-                        {
-                            case ClientEventEnum::CONNECTED()->getValue():
-                                //$self->getLogger()->debug("A new client {$peer} connected!");
-                                //$self->registerClient($peer)->onConnected();
-                                $self->registerClient($peer);
-                                break;
-                            case ClientEventEnum::DISCONNECTED()->getValue():
-                                //$self->getLogger()->debug("Client {$peer} disconnected!");
-                                //$self->getClientSession($peer)->onDisconnected();
-                                $self->removeClient($peer);
-                                break;
-                            case ClientEventEnum::PACKET_RECEIVED()->getValue():
-                                //$self->getLogger()->debug("Recv packet from {$peer} length " . strlen($packet));
-                                $packet = $self->getPacketHandler()
-                                    ->handlePacket($self->getClientSession($peer), $event->getEventData());
-                                $self->getClientSession($peer)->handle($packet);
-                                //$self->getClientSession($peer)->handlePacket($event->getEventData());
-                                break;
-                        }
-
-                    } catch (\Throwable $e) {
-
-                        $self->getLogger()->error("Handle exception", [
-                            'exception' => $e,
-                        ]);
-                        $self->disconnect($peer);
-
-                    }
-
-                }, $self, $event);
-
                 yield new Delayed(0);
+                return;
 
             }
+
+            $self->getLogger()->debug("Handle event: {$event->getValue()}", [
+                'event' => $event,
+                'address' => $event->getRemoteAddress(),
+            ]);
+
+            asyncCall(static function (self &$self, ClientEventEnum $event) {
+
+                $peer = $event->getRemoteAddress();
+
+                try {
+
+                    switch ($event->getValue())
+                    {
+                        case ClientEventEnum::CONNECTED()->getValue():
+                            //$self->getLogger()->debug("A new client {$peer} connected!");
+                            //$self->registerClient($peer)->onConnected();
+                            $self->registerClient($peer);
+                            break;
+                        case ClientEventEnum::DISCONNECTED()->getValue():
+                            //$self->getLogger()->debug("Client {$peer} disconnected!");
+                            //$self->getClientSession($peer)->onDisconnected();
+                            $self->removeClient($peer);
+                            break;
+                        case ClientEventEnum::PACKET_RECEIVED()->getValue():
+                            //$self->getLogger()->debug("Recv packet from {$peer} length " . strlen($packet));
+                            $packet = $self->getPacketHandler()
+                                ->handlePacket($self->getClientSession($peer), $event->getEventData());
+                            $self->getClientSession($peer)->handle($packet);
+                            //$self->getClientSession($peer)->handlePacket($event->getEventData());
+                            break;
+                    }
+
+                } catch (\Throwable $e) {
+
+                    $self->getLogger()->error("Handle exception", [
+                        'exception' => $e,
+                    ]);
+                    $self->disconnect($peer);
+
+                }
+
+            }, $self, $event);
+
+            yield new Delayed(0);
 
         }, $this);
     }

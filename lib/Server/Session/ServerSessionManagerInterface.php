@@ -6,10 +6,7 @@ namespace Konfigurator\Network\Server\Session;
 
 use Amp\Promise;
 use Amp\Socket\SocketAddress;
-use Konfigurator\Network\NetworkManagerInterface;
-use Konfigurator\Network\Packet\PacketHandlerInterface;
 use Konfigurator\Network\Packet\PacketInterface;
-use Konfigurator\Network\Server\ServerNetworkManagerInterface;
 use Konfigurator\Network\Session\SessionManagerInterface;
 
 
@@ -20,11 +17,6 @@ interface ServerSessionManagerInterface extends SessionManagerInterface
      * @return ServersideClientSessionInterface|null
      */
     public function getClientSession(SocketAddress $address): ?ServersideClientSessionInterface;
-
-    /**
-     * @return ServerNetworkManagerInterface
-     */
-    public function getNetworkManager(): NetworkManagerInterface;
 
     /**
      * @param SocketAddress $address

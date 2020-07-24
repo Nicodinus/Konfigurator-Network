@@ -8,25 +8,11 @@ use Amp\Failure;
 use Amp\Promise;
 use Amp\Socket\ResourceSocket;
 use Amp\Socket\SocketAddress;
-use Konfigurator\Common\Enums\StateEnum;
-use Konfigurator\Common\Exceptions\PendingShutdownError;
 use Konfigurator\Network\NetworkManagerInterface;
-use Konfigurator\Network\Server\NetworkManager\ServerEventEnum;
-use Konfigurator\Network\Server\NetworkManager\ServerStateEnum;
 
 
 interface ServerNetworkManagerInterface extends NetworkManagerInterface
 {
-    /**
-     * @return ServerStateEnum
-     */
-    public function getState(): StateEnum;
-
-    /**
-     * @return Promise<ServerEventEnum|null>|Failure<PendingShutdownError>
-     */
-    public function awaitEvent(): Promise;
-
     /**
      * @param SocketAddress $address
      * @return Promise<void>|Failure<\Throwable>

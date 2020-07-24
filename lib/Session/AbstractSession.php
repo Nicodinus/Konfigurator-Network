@@ -5,21 +5,19 @@ namespace Konfigurator\Network\Session;
 
 
 use Konfigurator\Common\Interfaces\ClassHasLogger;
+use Konfigurator\Common\Traits\ClassHasLoggerTrait;
 use Konfigurator\Network\NetworkManagerInterface;
-use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 use Ramsey\Uuid\Uuid;
 
 abstract class AbstractSession implements SessionInterface, ClassHasLogger
 {
+    use ClassHasLoggerTrait;
+
     /** @var string[] */
     private static array $aliveSessionIds = [];
 
     /** @var SessionManagerInterface */
     private SessionManagerInterface $sessionManager;
-
-    /** @var LoggerInterface */
-    private LoggerInterface $logger;
 
     /** @var SessionStorageInterface */
     private SessionStorageInterface $storage;
@@ -35,7 +33,6 @@ abstract class AbstractSession implements SessionInterface, ClassHasLogger
     public function __construct(SessionManagerInterface $sessionManager)
     {
         $this->sessionManager = $sessionManager;
-        $this->logger = new NullLogger();
         $this->storage = $this->createStorage();
 
         $this->id = $this->_getId();
@@ -100,24 +97,6 @@ abstract class AbstractSession implements SessionInterface, ClassHasLogger
     public function getId()
     {
         return $this->id;
-    }
-
-    /**
-     * @param LoggerInterface $logger
-     * @return static
-     */
-    public function setLogger(LoggerInterface $logger): self
-    {
-        $this->logger = $logger;
-        return $this;
-    }
-
-    /**
-     * @return LoggerInterface
-     */
-    public function getLogger(): LoggerInterface
-    {
-        return $this->logger;
     }
 
     /**

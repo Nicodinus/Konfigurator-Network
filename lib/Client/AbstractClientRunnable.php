@@ -5,14 +5,13 @@ namespace Konfigurator\Network\Client;
 
 
 use Amp\Delayed;
-use Amp\Loop;
-use Amp\Promise;
 use Amp\Socket\SocketAddress;
 use Konfigurator\Network\AbstractNetworkRunnable;
 use Konfigurator\Network\Client\NetworkManager\ConnectionStateEnum;
 use Konfigurator\Network\Client\Session\ClientSessionManagerInterface;
 use Konfigurator\Network\NetworkManagerInterface;
 use Konfigurator\Network\Session\SessionManagerInterface;
+use function Amp\asyncCall;
 
 abstract class AbstractClientRunnable extends AbstractNetworkRunnable
 {
@@ -61,14 +60,11 @@ abstract class AbstractClientRunnable extends AbstractNetworkRunnable
     }
 
     /**
-     * @param Promise $runnableAcceptor
      * @return void
      */
-    public function run(Promise $runnableAcceptor): void
+    public function _run(): void
     {
-        $self = &$this;
-
-        Loop::defer(static function () use (&$self) {
+        asyncCall(static function (self &$self) {
 
             while (!$self->isShutdownPending()) {
 
@@ -78,11 +74,9 @@ abstract class AbstractClientRunnable extends AbstractNetworkRunnable
 
                         yield $self->getNetworkManager()->connect($self->address, $self->timeout);
 
-                    } catch (\Throwable $e) {
+                    } catch (\Throwable $exception) {
 
-                        $self->getLogger()->error("Run exception", [
-                            'exception' => $e,
-                        ]);
+                        $self->exceptionLoopHandler($exception);
                         //ignore
 
                     }
@@ -93,8 +87,8 @@ abstract class AbstractClientRunnable extends AbstractNetworkRunnable
 
             }
 
-        });
+        }, $this);
 
-        parent::run($runnableAcceptor);
+        parent::_run();
     }
 }
