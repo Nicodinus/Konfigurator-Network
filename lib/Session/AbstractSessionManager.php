@@ -6,6 +6,7 @@ namespace Konfigurator\Network\Session;
 
 use Konfigurator\Common\Interfaces\ClassHasLogger;
 use Konfigurator\Network\NetworkManagerInterface;
+use Konfigurator\Network\Packet\PacketHandlerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
@@ -20,6 +21,9 @@ abstract class AbstractSessionManager implements SessionManagerInterface, ClassH
     /** @var bool */
     private bool $isShutdownPending;
 
+    /** @var PacketHandlerInterface */
+    private PacketHandlerInterface $packetHandler;
+
 
     /**
      * AbstractSessionManager constructor.
@@ -30,6 +34,7 @@ abstract class AbstractSessionManager implements SessionManagerInterface, ClassH
         $this->logger = new NullLogger();
         $this->networkManager = $networkManager;
         $this->isShutdownPending = false;
+        $this->packetHandler = $this->createPacketHandler();
     }
 
     /**
@@ -77,4 +82,17 @@ abstract class AbstractSessionManager implements SessionManagerInterface, ClassH
     {
         return $this->networkManager;
     }
+
+    /**
+     * @return PacketHandlerInterface
+     */
+    public function getPacketHandler(): PacketHandlerInterface
+    {
+        return $this->packetHandler;
+    }
+
+    /**
+     * @return PacketHandlerInterface
+     */
+    protected abstract function createPacketHandler(): PacketHandlerInterface;
 }

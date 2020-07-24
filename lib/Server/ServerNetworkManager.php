@@ -84,7 +84,7 @@ class ServerNetworkManager extends AbstractNetworkManager implements ServerNetwo
             return new Success();
         }
 
-        return call(static function (self $self, SocketAddress $address) {
+        return call(static function (self &$self, SocketAddress $address) {
 
             try {
 
@@ -124,7 +124,7 @@ class ServerNetworkManager extends AbstractNetworkManager implements ServerNetwo
             return;
         }
 
-        asyncCall(static function (self $self) {
+        asyncCall(static function (self &$self) {
 
             foreach ($self->acceptedSockets as $acceptedSocket) {
                 $acceptedSocket->close();
@@ -159,7 +159,7 @@ class ServerNetworkManager extends AbstractNetworkManager implements ServerNetwo
     {
         $this->acceptedSockets[$socket->getRemoteAddress()->toString()] = $socket;
 
-        asyncCall(static function (self $self, ResourceSocket $socket) {
+        asyncCall(static function (self &$self, ResourceSocket $socket) {
 
             $remoteAddr = $socket->getRemoteAddress();
 
@@ -220,7 +220,7 @@ class ServerNetworkManager extends AbstractNetworkManager implements ServerNetwo
             return new Failure(new PendingShutdownError());
         }
 
-        return call(static function (self $self) {
+        return call(static function (self &$self) {
 
             while ($self->getState()->equals(ServerStateEnum::LISTEN())) {
 
@@ -246,7 +246,7 @@ class ServerNetworkManager extends AbstractNetworkManager implements ServerNetwo
      */
     public function sendPacket(SocketAddress $remoteAddr, $packet): Promise
     {
-        return call(static function (self $self, SocketAddress $remoteAddr, $packet){
+        return call(static function (self &$self, SocketAddress $remoteAddr, $packet){
 
             $socket = $self->getClientSocket($remoteAddr);
             if (!$socket) {
@@ -268,7 +268,7 @@ class ServerNetworkManager extends AbstractNetworkManager implements ServerNetwo
      */
     public function disconnect(SocketAddress $remoteAddr): Promise
     {
-        return call(static function (self $self, SocketAddress $remoteAddr) {
+        return call(static function (self &$self, SocketAddress $remoteAddr) {
 
             $socket = $self->getClientSocket($remoteAddr);
             if (!$socket) {

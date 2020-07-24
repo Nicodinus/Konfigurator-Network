@@ -9,8 +9,7 @@ use Amp\Promise;
 use Konfigurator\Network\Client\ClientNetworkManagerInterface;
 use Konfigurator\Network\Client\NetworkManager\ConnectionEventEnum;
 use Konfigurator\Network\NetworkManagerInterface;
-use Konfigurator\Network\Packets\PacketHandlerInterface;
-use Konfigurator\Network\Packets\PacketInterface;
+use Konfigurator\Network\Packet\PacketInterface;
 use Konfigurator\Network\Session\AbstractSessionManager;
 use function Amp\asyncCall;
 use function Amp\call;
@@ -19,9 +18,6 @@ abstract class AbstractClientSessionManager extends AbstractSessionManager imple
 {
     /** @var ClientSessionInterface|null */
     private ?ClientSessionInterface $session;
-
-    /** @var PacketHandlerInterface */
-    private PacketHandlerInterface $packetHandler;
 
     /**
      * AbstractClientSession constructor.
@@ -32,8 +28,6 @@ abstract class AbstractClientSessionManager extends AbstractSessionManager imple
         parent::__construct($networkManager);
 
         $this->session = null;
-
-        $this->packetHandler = $this->createPacketHandler();
     }
 
     /**
@@ -41,7 +35,7 @@ abstract class AbstractClientSessionManager extends AbstractSessionManager imple
      */
     public function handle(): Promise
     {
-        return call(static function (self $self) {
+        return call(static function (self &$self) {
 
             while (!$self->isShutdownPending()) {
 
@@ -56,7 +50,7 @@ abstract class AbstractClientSessionManager extends AbstractSessionManager imple
                     'event' => $event,
                 ]);
 
-                asyncCall(static function (self $self, ConnectionEventEnum $event) {
+                asyncCall(static function (self &$self, ConnectionEventEnum $event) {
 
                     try {
 
@@ -73,7 +67,7 @@ abstract class AbstractClientSessionManager extends AbstractSessionManager imple
                             case ConnectionEventEnum::PACKET_RECEIVED()->getValue():
                                 //$self->getClientSession()->handlePacket($event->getEventData());
                                 $packet = $self->getPacketHandler()
-                                    ->handleRemotePacket($self->getClientSession(), $event->getEventData());
+                                    ->handlePacket($self->getClientSession(), $event->getEventData());
                                 $self->getClientSession()->handle($packet);
                                 break;
                         }
@@ -97,30 +91,12 @@ abstract class AbstractClientSessionManager extends AbstractSessionManager imple
     }
 
     /**
-     * @return PacketHandlerInterface
-     */
-    protected abstract function createPacketHandler(): PacketHandlerInterface;
-
-    /**
      * @return ClientNetworkManagerInterface
      */
     public function getNetworkManager(): NetworkManagerInterface
     {
         return parent::getNetworkManager();
     }
-
-    /**
-     * @return PacketHandlerInterface
-     */
-    public function getPacketHandler(): PacketHandlerInterface
-    {
-        return $this->packetHandler;
-    }
-
-    /**
-     * @return ClientSessionInterface
-     */
-    protected abstract function createClientSession(): ClientSessionInterface;
 
     /**
      * @return static
@@ -145,7 +121,7 @@ abstract class AbstractClientSessionManager extends AbstractSessionManager imple
      */
     public function sendPacket(PacketInterface $packet): Promise
     {
-        $packet = $this->getPacketHandler()->handleLocalPacket($packet);
+        $packet = $this->getPacketHandler()->preparePacket($packet);
 
         return $this->getNetworkManager()->sendPacket($packet);
     }
@@ -161,4 +137,9 @@ abstract class AbstractClientSessionManager extends AbstractSessionManager imple
 
         $this->getNetworkManager()->disconnect();
     }
+
+    /**
+     * @return ClientSessionInterface
+     */
+    protected abstract function createClientSession(): ClientSessionInterface;
 }

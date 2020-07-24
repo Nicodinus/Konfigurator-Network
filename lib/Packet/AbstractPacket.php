@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Konfigurator\Network\Packets;
+namespace Konfigurator\Network\Packet;
 
 
 use Konfigurator\Network\Session\SessionInterface;
@@ -9,10 +9,10 @@ use Konfigurator\Network\Session\SessionInterface;
 abstract class AbstractPacket implements PacketInterface
 {
     /** @var SessionInterface */
-    protected SessionInterface $session;
+    private SessionInterface $session;
 
     /** @var bool */
-    protected bool $isRemote;
+    private bool $isRemote;
 
     /** @var mixed */
     protected $data;
@@ -52,18 +52,5 @@ abstract class AbstractPacket implements PacketInterface
     public function getData()
     {
         return $this->data;
-    }
-
-    /**
-     * @return string
-     */
-    protected abstract function encode(): string;
-
-    /**
-     * @return string
-     */
-    public function __toString()
-    {
-        return $this->encode();
     }
 }

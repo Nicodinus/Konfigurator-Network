@@ -7,8 +7,8 @@ namespace Konfigurator\Network\Client\Session;
 use Amp\Promise;
 use Konfigurator\Network\Client\ClientNetworkManagerInterface;
 use Konfigurator\Network\NetworkManagerInterface;
-use Konfigurator\Network\Packets\PacketHandlerInterface;
-use Konfigurator\Network\Packets\PacketInterface;
+use Konfigurator\Network\Packet\PacketHandlerInterface;
+use Konfigurator\Network\Packet\PacketInterface;
 use Konfigurator\Network\Session\SessionManagerInterface;
 
 interface ClientSessionManagerInterface extends SessionManagerInterface

@@ -44,7 +44,7 @@ class ClientNetworkManager extends AbstractNetworkManager implements ClientNetwo
      */
     protected function createConnectHandler(SocketAddress $address, int $timeout): Promise
     {
-        return call(static function (self $self, SocketAddress $address, int $timeout) {
+        return call(static function (self &$self, SocketAddress $address, int $timeout) {
 
             try {
 
@@ -84,7 +84,7 @@ class ClientNetworkManager extends AbstractNetworkManager implements ClientNetwo
             return new Success();
         }
 
-        return call(static function (self $self, SocketAddress $address, int $timeout) {
+        return call(static function (self &$self, SocketAddress $address, int $timeout) {
 
             try {
 
@@ -94,7 +94,7 @@ class ClientNetworkManager extends AbstractNetworkManager implements ClientNetwo
 
                 $self->getLogger()->info("Connection successful established with tcp://{$address}!");
 
-                asyncCall(static function (self $self) {
+                asyncCall(static function (self &$self) {
 
                     while (!$self->isShutdownPending() && $self->clientHandler && !$self->clientHandler->isClosed()) {
                         yield new Delayed(1000);
@@ -136,7 +136,7 @@ class ClientNetworkManager extends AbstractNetworkManager implements ClientNetwo
             return;
         }
 
-        asyncCall(static function (self $self) {
+        asyncCall(static function (self &$self) {
 
             $self->getLogger()->info("Connection closed!");
 
@@ -170,7 +170,7 @@ class ClientNetworkManager extends AbstractNetworkManager implements ClientNetwo
             return new Failure(new ConnectException("Client disconnected!"));
         }
 
-        return call(static function (self $self, $packet) {
+        return call(static function (self &$self, $packet) {
 
             try {
 
@@ -201,7 +201,7 @@ class ClientNetworkManager extends AbstractNetworkManager implements ClientNetwo
             return new Failure(new PendingShutdownError());
         }
 
-        return call(static function (self $self) {
+        return call(static function (self &$self) {
 
             while ($self->getState()->equals(ConnectionStateEnum::CONNECTED())) {
 
@@ -232,7 +232,7 @@ class ClientNetworkManager extends AbstractNetworkManager implements ClientNetwo
             return new Failure(new ConnectException("Client disconnected!"));
         }
 
-        return call(static function (self $self) {
+        return call(static function (self &$self) {
 
             try {
 

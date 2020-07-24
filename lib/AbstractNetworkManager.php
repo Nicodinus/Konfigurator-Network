@@ -97,7 +97,7 @@ abstract class AbstractNetworkManager implements NetworkManagerInterface, ClassH
      */
     protected function notifyEventAcceptor(?EventEnum $event = null): void
     {
-        asyncCall(static function (self $self, $event) {
+        asyncCall(static function (self &$self, $event) {
 
             yield new Delayed(0);
 

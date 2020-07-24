@@ -1,12 +1,12 @@
 <?php
 
 
-namespace Konfigurator\Network\Packets;
+namespace Konfigurator\Network\Packet;
 
 
 use Konfigurator\Network\Session\SessionInterface;
 
-interface PacketInterface extends \Stringable
+interface PacketInterface
 {
     /**
      * @return mixed

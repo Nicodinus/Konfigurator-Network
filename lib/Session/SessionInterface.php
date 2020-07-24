@@ -5,7 +5,7 @@ namespace Konfigurator\Network\Session;
 
 
 use Amp\Promise;
-use Konfigurator\Network\Packets\PacketInterface;
+use Konfigurator\Network\Packet\PacketInterface;
 
 interface SessionInterface
 {

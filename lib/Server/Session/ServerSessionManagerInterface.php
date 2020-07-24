@@ -7,8 +7,8 @@ namespace Konfigurator\Network\Server\Session;
 use Amp\Promise;
 use Amp\Socket\SocketAddress;
 use Konfigurator\Network\NetworkManagerInterface;
-use Konfigurator\Network\Packets\PacketHandlerInterface;
-use Konfigurator\Network\Packets\PacketInterface;
+use Konfigurator\Network\Packet\PacketHandlerInterface;
+use Konfigurator\Network\Packet\PacketInterface;
 use Konfigurator\Network\Server\ServerNetworkManagerInterface;
 use Konfigurator\Network\Session\SessionManagerInterface;
 
