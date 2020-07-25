@@ -4,7 +4,6 @@
 namespace Konfigurator\Network\Server;
 
 
-use Amp\Delayed;
 use Amp\Failure;
 use Amp\Promise;
 use Amp\Socket\BindContext;
@@ -89,7 +88,7 @@ class ServerNetworkManager extends AbstractNetworkManager implements ServerNetwo
 
                 $self->notifyEventAcceptor(ServerEventEnum::LISTEN());
 
-                yield new Delayed(0);
+                //yield new Delayed(0);
 
             } catch (\Throwable $e) {
 
@@ -132,7 +131,7 @@ class ServerNetworkManager extends AbstractNetworkManager implements ServerNetwo
             }
             $self->acceptedSockets = [];
 
-            yield new Delayed(0);
+            //yield new Delayed(0);
 
             if ($self->serverHandler) {
                 if (!$self->serverHandler->isClosed()) {
@@ -147,7 +146,7 @@ class ServerNetworkManager extends AbstractNetworkManager implements ServerNetwo
 
             $self->notifyEventAcceptor(ServerEventEnum::CLOSED());
 
-            yield new Delayed(0);
+            //yield new Delayed(0);
 
         }, $this);
     }
@@ -168,7 +167,7 @@ class ServerNetworkManager extends AbstractNetworkManager implements ServerNetwo
 
             $self->notifyEventAcceptor(ClientEventEnum::CONNECTED()->setRemoteAddress($remoteAddr));
 
-            yield new Delayed(0);
+            //yield new Delayed(0);
 
             try {
 
@@ -177,7 +176,7 @@ class ServerNetworkManager extends AbstractNetworkManager implements ServerNetwo
                     $packet = yield $socket->read();
 
                     if (!$packet) {
-                        yield new Delayed(0);
+                        //yield new Delayed(0);
                         continue;
                     }
 
@@ -185,7 +184,7 @@ class ServerNetworkManager extends AbstractNetworkManager implements ServerNetwo
 
                     $self->notifyEventAcceptor(ClientEventEnum::PACKET_RECEIVED()->setRemoteAddress($remoteAddr)->withEventData($packet));
 
-                    yield new Delayed(0);
+                    //yield new Delayed(0);
 
                 }
 
@@ -207,7 +206,7 @@ class ServerNetworkManager extends AbstractNetworkManager implements ServerNetwo
 
             $self->notifyEventAcceptor(ClientEventEnum::DISCONNECTED()->setRemoteAddress($remoteAddr));
 
-            yield new Delayed(0);
+            //yield new Delayed(0);
 
         }, $this, $socket);
     }
@@ -224,12 +223,12 @@ class ServerNetworkManager extends AbstractNetworkManager implements ServerNetwo
                 /** @var ResourceSocket $socket */
                 $socket = yield $self->serverHandler->accept();
                 if (!$socket) {
-                    yield new Delayed(0);
+                    //yield new Delayed(0);
                     continue;
                 }
 
                 $self->registerClient($socket);
-                yield new Delayed(0);
+                //yield new Delayed(0);
 
             }
 
@@ -254,8 +253,6 @@ class ServerNetworkManager extends AbstractNetworkManager implements ServerNetwo
 
             yield $socket->write($packet);
 
-            return new Success();
-
         }, $this, $remoteAddr, $packet);
     }
 
@@ -273,8 +270,6 @@ class ServerNetworkManager extends AbstractNetworkManager implements ServerNetwo
             }
 
             $socket->close();
-
-            return new Success();
 
         }, $this, $remoteAddr);
     }

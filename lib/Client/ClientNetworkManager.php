@@ -47,9 +47,9 @@ class ClientNetworkManager extends AbstractNetworkManager implements ClientNetwo
 
             try {
 
-                return new Success(yield connect("tcp://{$address}", (new ConnectContext())
+                return yield connect("tcp://{$address}", (new ConnectContext())
                     ->withConnectTimeout($timeout)
-                ));
+                );
 
             } catch (\Throwable $e) {
 
@@ -101,7 +101,7 @@ class ClientNetworkManager extends AbstractNetworkManager implements ClientNetwo
 
                 $self->notifyEventAcceptor(ConnectionEventEnum::CONNECTED());
 
-                yield new Delayed(0);
+                //yield new Delayed(0);
 
             } catch (\Throwable $e) {
 
@@ -152,7 +152,7 @@ class ClientNetworkManager extends AbstractNetworkManager implements ClientNetwo
 
             $self->notifyEventAcceptor(ConnectionEventEnum::DISCONNECTED());
 
-            yield new Delayed(0);
+            //yield new Delayed(0);
 
         }, $this);
     }
@@ -204,13 +204,13 @@ class ClientNetworkManager extends AbstractNetworkManager implements ClientNetwo
 
                 $packet = yield $self->receivePacket();
                 if (!$packet) {
-                    yield new Delayed(0);
+                    //yield new Delayed(0);
                     continue;
                 }
 
                 $self->notifyEventAcceptor(ConnectionEventEnum::PACKET_RECEIVED()->withEventData($packet));
 
-                yield new Delayed(0);
+                //yield new Delayed(0);
             }
 
         }, $this);
@@ -234,13 +234,14 @@ class ClientNetworkManager extends AbstractNetworkManager implements ClientNetwo
             try {
 
                 $packet = yield $self->clientHandler->read();
-                if (!$packet) {
-                    return new Success();
+
+                if ($packet) {
+
+                    $self->getLogger()->debug("RECV: packet length " . strlen($packet));
+
+                    return $packet;
+
                 }
-
-                $self->getLogger()->debug("RECV: packet length " . strlen($packet));
-
-                return new Success($packet);
 
             } catch (\Throwable $e) {
 

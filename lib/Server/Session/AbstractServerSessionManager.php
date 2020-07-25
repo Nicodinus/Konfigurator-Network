@@ -7,6 +7,7 @@ namespace Konfigurator\Network\Server\Session;
 use Amp\Delayed;
 use Amp\Promise;
 use Amp\Socket\SocketAddress;
+use Konfigurator\Common\Interfaces\ClassEventListenerInterface;
 use Konfigurator\Network\NetworkManagerInterface;
 use Konfigurator\Network\Packet\PacketInterface;
 use Konfigurator\Network\Server\NetworkManager\ClientEventEnum;
@@ -21,6 +22,9 @@ abstract class AbstractServerSessionManager extends AbstractSessionManager imple
     /** @var ServersideClientSessionInterface[] */
     private array $sessions;
 
+    /** @var ClassEventListenerInterface */
+    private ClassEventListenerInterface $eventListener;
+
 
     /**
      * AbstractServerSessionManager constructor.
@@ -29,6 +33,8 @@ abstract class AbstractServerSessionManager extends AbstractSessionManager imple
     public function __construct(ServerNetworkManagerInterface $networkManager)
     {
         parent::__construct($networkManager);
+
+        $this->eventListener = $this->getNetworkManager()->registerEventListener();
 
         $this->sessions = [];
     }
@@ -68,7 +74,7 @@ abstract class AbstractServerSessionManager extends AbstractSessionManager imple
         return call(static function (self &$self) {
 
             /** @var ServerEventEnum $event */
-            $event = yield $self->getNetworkManager()->awaitEvent();
+            $event = yield $self->getNetworkManager()->awaitEvent($self->eventListener);
             if (!$event) {
                 yield new Delayed(0);
                 return;
