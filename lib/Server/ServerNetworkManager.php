@@ -126,6 +126,10 @@ class ServerNetworkManager extends AbstractNetworkManager implements ServerNetwo
 
         asyncCall(static function (self &$self) {
 
+            $self->getLogger()->debug("Server socket closed!");
+
+            $self->setState(ServerStateEnum::CLOSED());
+
             foreach ($self->acceptedSockets as $acceptedSocket) {
                 $acceptedSocket->close();
             }
@@ -139,10 +143,6 @@ class ServerNetworkManager extends AbstractNetworkManager implements ServerNetwo
                 }
                 $self->serverHandler = null;
             }
-
-            $self->getLogger()->debug("Server socket closed!");
-
-            $self->setState(ServerStateEnum::CLOSED());
 
             $self->notifyEventAcceptor(ServerEventEnum::CLOSED());
 

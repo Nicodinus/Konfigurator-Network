@@ -141,14 +141,14 @@ class ClientNetworkManager extends AbstractNetworkManager implements ClientNetwo
 
             $self->getLogger()->info("Connection closed!");
 
+            $self->setState(ConnectionStateEnum::CLOSED());
+
             if ($self->clientHandler) {
                 if (!$self->clientHandler->isClosed()) {
                     $self->clientHandler->close();
                 }
                 $self->clientHandler = null;
             }
-
-            $self->setState(ConnectionStateEnum::CLOSED());
 
             $self->notifyEventAcceptor(ConnectionEventEnum::DISCONNECTED());
 

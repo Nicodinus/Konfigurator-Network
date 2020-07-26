@@ -10,14 +10,6 @@ interface PacketHandlerInterface
 {
     /**
      * @param SessionInterface $session
-     * @param string $classname
-     * @param bool $isRemote
-     * @return PacketInterface
-     */
-    public function createPacket($session, string $classname, bool $isRemote = false): PacketInterface;
-
-    /**
-     * @param SessionInterface $session
      * @param string $packet
      * @return PacketInterface
      */

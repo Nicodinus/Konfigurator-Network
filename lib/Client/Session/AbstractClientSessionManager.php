@@ -107,6 +107,7 @@ abstract class AbstractClientSessionManager extends AbstractSessionManager imple
     {
         unset($this->session);
         $this->session = null;
+        return $this;
     }
 
     /**

@@ -40,15 +40,6 @@ abstract class AbstractClientSession extends AbstractSession implements ClientSe
     }
 
     /**
-     * @param string $classname
-     * @return PacketInterface
-     */
-    public function createPacket(string $classname): PacketInterface
-    {
-        return $this->getSessionManager()->getPacketHandler()->createPacket($this, $classname);
-    }
-
-    /**
      * @return ClientSessionManagerInterface
      */
     public function getSessionManager(): SessionManagerInterface

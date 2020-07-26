@@ -35,10 +35,4 @@ interface SessionInterface
      * @return Promise<void>
      */
     public function sendPacket(PacketInterface $packet): Promise;
-
-    /**
-     * @param string $classname
-     * @return PacketInterface
-     */
-    public function createPacket(string $classname): PacketInterface;
 }
