@@ -4,55 +4,55 @@
 namespace Konfigurator\Network;
 
 
-use Amp\Delayed;
+use Amp\Promise;
 use Konfigurator\Common\AbstractLoopRunnable;
 use Konfigurator\Common\Interfaces\ClassHasLogger;
 use Konfigurator\Common\Traits\ClassHasLoggerTrait;
 use Konfigurator\Network\Session\SessionManagerInterface;
-use function Amp\asyncCall;
-use function Amp\Promise\all;
 
 abstract class AbstractNetworkRunnable extends AbstractLoopRunnable implements ClassHasLogger
 {
     use ClassHasLoggerTrait;
 
-    /** @var NetworkManagerInterface */
-    private NetworkManagerInterface $networkManager;
+    /** @var NetworkHandlerInterface */
+    private NetworkHandlerInterface $networkHandler;
 
     /** @var SessionManagerInterface */
     private SessionManagerInterface $sessionManager;
 
-    /**
-     * @param \Throwable $exception
-     * @param string|null $message
-     */
-    protected function exceptionLoopHandler(\Throwable $exception, ?string $message = null): void
-    {
-        $this->getLogger()->error($message ?? __CLASS__ . " throws an exception!", [
-            'exception' => $exception,
-        ]);
-    }
+    /** @var NetworkEventDispatcher */
+    private NetworkEventDispatcher $eventDispatcher;
 
 
     /**
      * AbstractNetworkRunnable constructor.
+     * @param NetworkEventDispatcher|null $eventDispatcher
      */
-    public function __construct()
+    public function __construct(?NetworkEventDispatcher $eventDispatcher = null)
     {
-        $this->networkManager = $this->createNetworkManager();
-        $this->sessionManager = $this->createSessionManager($this->networkManager);
+        parent::__construct();
+
+        $this->eventDispatcher = $eventDispatcher ?? new NetworkEventDispatcher();
+
+        $this->networkHandler = $this->createNetworkHandler();
+        $this->sessionManager = $this->createSessionManager();
     }
 
     /**
-     * @param NetworkManagerInterface $networkManager
-     * @return SessionManagerInterface
+     * @return void
      */
-    protected abstract function createSessionManager($networkManager): SessionManagerInterface;
+    public function __destruct()
+    {
+        parent::__destruct();
+    }
 
     /**
-     * @return NetworkManagerInterface
+     * @return NetworkEventDispatcher
      */
-    protected abstract function createNetworkManager(): NetworkManagerInterface;
+    public function getEventDispatcher(): NetworkEventDispatcher
+    {
+        return $this->eventDispatcher;
+    }
 
     /**
      * @return SessionManagerInterface
@@ -63,11 +63,19 @@ abstract class AbstractNetworkRunnable extends AbstractLoopRunnable implements C
     }
 
     /**
-     * @return NetworkManagerInterface
+     * @return NetworkHandlerInterface
      */
-    public function getNetworkManager(): NetworkManagerInterface
+    public function getNetworkHandler(): NetworkHandlerInterface
     {
-        return $this->networkManager;
+        return $this->networkHandler;
+    }
+
+    /**
+     * @return Promise<void>
+     */
+    public function handle(): Promise
+    {
+        return $this->getNetworkHandler()->handle();
     }
 
     /**
@@ -77,36 +85,27 @@ abstract class AbstractNetworkRunnable extends AbstractLoopRunnable implements C
     {
         parent::shutdown();
 
-        $this->getSessionManager()->shutdown();
-        $this->getNetworkManager()->shutdown();
+        $this->getNetworkHandler()->shutdown();
     }
 
     /**
-     * @return void
+     * @param \Throwable $exception
+     * @param string|null $message
      */
-    protected function _run(): void
+    protected function exceptionHandler(\Throwable $exception, ?string $message = null): void
     {
-        asyncCall(static function (self &$self) {
-
-            try {
-
-                yield all([
-                    $self->getSessionManager()->handle(),
-                    $self->getNetworkManager()->handle(),
-                ]);
-
-                yield new Delayed(0);
-
-            } catch (\Throwable $exception) {
-
-                $self->exceptionLoopHandler($exception);
-
-            }
-
-            yield new Delayed(0);
-
-            $self->shutdown();
-
-        }, $this);
+        $this->getLogger()->error($message ?? "Exception handle", [
+            'exception' => $exception,
+        ]);
     }
+
+    /**
+     * @return SessionManagerInterface
+     */
+    protected abstract function createSessionManager(): SessionManagerInterface;
+
+    /**
+     * @return NetworkHandlerInterface
+     */
+    protected abstract function createNetworkHandler(): NetworkHandlerInterface;
 }

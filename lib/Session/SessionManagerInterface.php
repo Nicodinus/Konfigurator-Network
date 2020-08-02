@@ -4,20 +4,25 @@
 namespace Konfigurator\Network\Session;
 
 
-use Konfigurator\Common\Interfaces\AsyncHandlerInterface;
-use Konfigurator\Common\Interfaces\GracefulShutdownPossible;
-use Konfigurator\Network\NetworkManagerInterface;
-use Konfigurator\Network\Packet\PacketHandlerInterface;
+use Amp\Socket\SocketAddress;
+use Konfigurator\Network\Client\ClientNetworkHandlerInterface;
 
-interface SessionManagerInterface extends AsyncHandlerInterface, GracefulShutdownPossible
+interface SessionManagerInterface
 {
     /**
-     * @return NetworkManagerInterface
+     * @param ClientNetworkHandlerInterface $networkHandler
+     * @return SessionInterface
      */
-    public function getNetworkManager(): NetworkManagerInterface;
+    public function createSession(ClientNetworkHandlerInterface $networkHandler): SessionInterface;
 
     /**
-     * @return PacketHandlerInterface
+     * @param SocketAddress $address
+     * @return SessionInterface|null
      */
-    public function getPacketHandler(): PacketHandlerInterface;
+    public function getSession(SocketAddress $address): ?SessionInterface;
+
+    /**
+     * @return SessionInterface[]
+     */
+    public function getSessions(): array;
 }

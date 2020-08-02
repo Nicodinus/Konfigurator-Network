@@ -5,20 +5,22 @@ namespace Konfigurator\Network\Session;
 
 
 use Amp\Promise;
+use Amp\Socket\SocketAddress;
 use Konfigurator\Network\Packet\PacketInterface;
+use Konfigurator\Network\Session\Auth\AuthGuardInterface;
 
 interface SessionInterface
 {
     /**
-     * @return string|float|int|bool|null
+     * @return SocketAddress
      */
-    public function getId();
+    public function getAddress(): SocketAddress;
 
     /**
-     * @param PacketInterface $packet
-     * @return void
+     * @param string $packet
+     * @return Promise<void>
      */
-    public function handle(PacketInterface $packet): void;
+    public function handlePacket(string $packet): Promise;
 
     /**
      * @return SessionStorageInterface
@@ -26,13 +28,18 @@ interface SessionInterface
     public function getStorage(): SessionStorageInterface;
 
     /**
-     * @return SessionManagerInterface
+     * @return AuthGuardInterface
      */
-    public function getSessionManager(): SessionManagerInterface;
+    public function getAuthGuard(): AuthGuardInterface;
 
     /**
      * @param PacketInterface $packet
      * @return Promise<void>
      */
     public function sendPacket(PacketInterface $packet): Promise;
+
+    /**
+     * @return void
+     */
+    public function disconnect(): void;
 }

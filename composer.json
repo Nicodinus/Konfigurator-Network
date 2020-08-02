@@ -22,20 +22,25 @@
     }
   },
   "repositories": [
-	  {
-		"type": "path", 
-		"url": "../Common",
-		"symlink": true
-	  }
+    {
+      "type": "path",
+      "url": "../Common",
+      "symlink": true
+    },
+    {
+      "type": "github",
+      "url": "https://github.com/Nicodinus/symfony-async-event-dispatcher"
+    }
   ],
   "require": {
     "php": ">=7.4.2",
     "psr/log": "^1.1",
-    "amphp/amp": "^2.5",
+    "amphp/amp": "^2.4",
     "amphp/socket": "^1.1",
     "myclabs/php-enum": "^1.7",
 	"ramsey/uuid": "^4.0",
     "konfigurator/common": "dev-master",
+    "nicodinus/symfony-async-event-dispatcher": "dev-master",
     "symfony/polyfill-php80": "^1.18"
   },
   "require-dev": {

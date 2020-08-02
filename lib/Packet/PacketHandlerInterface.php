@@ -4,6 +4,7 @@
 namespace Konfigurator\Network\Packet;
 
 
+use Amp\Promise;
 use Konfigurator\Network\Session\SessionInterface;
 
 interface PacketHandlerInterface
@@ -11,9 +12,9 @@ interface PacketHandlerInterface
     /**
      * @param SessionInterface $session
      * @param string $packet
-     * @return PacketInterface
+     * @return Promise<PacketInterface>
      */
-    public function handlePacket($session, string $packet): PacketInterface;
+    public function handlePacket($session, string $packet): Promise;
 
     /**
      * @param PacketInterface $packet

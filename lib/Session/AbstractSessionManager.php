@@ -4,62 +4,99 @@
 namespace Konfigurator\Network\Session;
 
 
-use Konfigurator\Common\AbstractAsyncHandler;
+use Amp\Socket\SocketAddress;
 use Konfigurator\Common\Interfaces\ClassHasLogger;
 use Konfigurator\Common\Traits\ClassHasLoggerTrait;
-use Konfigurator\Network\NetworkManagerInterface;
-use Konfigurator\Network\Packet\PacketHandlerInterface;
+use Konfigurator\Network\Client\ClientNetworkHandlerEvent;
+use Konfigurator\Network\Client\ClientNetworkHandlerInterface;
+use Konfigurator\Network\NetworkEventDispatcher;
 
-abstract class AbstractSessionManager extends AbstractAsyncHandler implements SessionManagerInterface, ClassHasLogger
+abstract class AbstractSessionManager implements SessionManagerInterface, ClassHasLogger
 {
     use ClassHasLoggerTrait;
 
-    /** @var NetworkManagerInterface */
-    private NetworkManagerInterface $networkManager;
+    /** @var SessionInterface[] */
+    private array $sessions;
 
-    /** @var PacketHandlerInterface */
-    private PacketHandlerInterface $packetHandler;
+    /** @var NetworkEventDispatcher */
+    private NetworkEventDispatcher $eventDispatcher;
 
 
     /**
      * AbstractSessionManager constructor.
-     * @param NetworkManagerInterface $networkManager
+     * @param NetworkEventDispatcher $eventDispatcher
      */
-    public function __construct(NetworkManagerInterface $networkManager)
+    public function __construct(NetworkEventDispatcher $eventDispatcher)
     {
-        $this->networkManager = $networkManager;
-        $this->packetHandler = $this->createPacketHandler();
+        $this->eventDispatcher = $eventDispatcher;
+
+        $this->sessions = [];
+
+        $self = &$this;
+
+        $this->getEventDispatcher()
+            ->addListener(ClientNetworkHandlerEvent::CONNECTED(), function (ClientNetworkHandlerEvent $event) use (&$self) {
+                $self->createSession($event->getNetworkHandler());
+            })
+            ->addListener(ClientNetworkHandlerEvent::DISCONNECTED(), function (ClientNetworkHandlerEvent $event) use (&$self) {
+                $self->removeSession($event->getNetworkHandler()->getAddress());
+            })
+            ->addListener(ClientNetworkHandlerEvent::PACKET_RECEIVED(), function (ClientNetworkHandlerEvent $event) use (&$self) {
+                yield $self->getSession($event->getNetworkHandler()->getAddress())->handlePacket($event->getEventData());
+            })
+        ;
     }
 
     /**
-     * @param \Throwable $exception
-     * @param string|null $message
+     * @param ClientNetworkHandlerInterface $networkHandler
+     * @return SessionInterface
      */
-    protected function exceptionLoopHandler(\Throwable $exception, ?string $message = null): void
+    public function createSession(ClientNetworkHandlerInterface $networkHandler): SessionInterface
     {
-        $this->getLogger()->error($message ?? __CLASS__ . " throws an exception!", [
-            'exception' => $exception,
-        ]);
+        $sessionInstance = $this->createSessionInstance($networkHandler);
+
+        $this->sessions[$networkHandler->getAddress()->toString()] = $sessionInstance;
+
+        return $sessionInstance;
     }
 
     /**
-     * @return NetworkManagerInterface
+     * @param SocketAddress $address
+     * @return SessionInterface|null
      */
-    public function getNetworkManager(): NetworkManagerInterface
+    public function getSession(SocketAddress $address): ?SessionInterface
     {
-        return $this->networkManager;
+        return $this->sessions[$address->toString()] ?? null;
     }
 
     /**
-     * @return PacketHandlerInterface
+     * @return SessionInterface[]
      */
-    public function getPacketHandler(): PacketHandlerInterface
+    public function getSessions(): array
     {
-        return $this->packetHandler;
+        return $this->sessions;
     }
 
     /**
-     * @return PacketHandlerInterface
+     * @param SocketAddress $address
+     * @return void
      */
-    protected abstract function createPacketHandler(): PacketHandlerInterface;
+    protected function removeSession(SocketAddress $address): void
+    {
+        unset($this->sessions[$address->toString()]);
+    }
+
+    /**
+     * @return NetworkEventDispatcher
+     */
+    protected function getEventDispatcher(): NetworkEventDispatcher
+    {
+        return $this->eventDispatcher;
+    }
+
+    /**
+     * @param ClientNetworkHandlerInterface $networkHandler
+     * @return SessionInterface
+     */
+    protected abstract function createSessionInstance(ClientNetworkHandlerInterface $networkHandler): SessionInterface;
 }

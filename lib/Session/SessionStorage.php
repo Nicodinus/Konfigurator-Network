@@ -4,6 +4,8 @@
 namespace Konfigurator\Network\Session;
 
 
+use Konfigurator\Network\Client\Session\ClientSessionInterface;
+
 class SessionStorage implements SessionStorageInterface
 {
     /** @var SessionInterface */
@@ -92,7 +94,7 @@ class SessionStorage implements SessionStorageInterface
      */
     public function offsetGet($offset)
     {
-        return $this->getSession($offset);
+        return $this->get($offset);
     }
 
     /**
@@ -117,5 +119,13 @@ class SessionStorage implements SessionStorageInterface
     public function count()
     {
         return sizeof($this->data);
+    }
+
+    /**
+     * @return void
+     */
+    public function __destruct()
+    {
+        $this->data = [];
     }
 }

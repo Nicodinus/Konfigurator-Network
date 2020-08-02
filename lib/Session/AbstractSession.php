@@ -4,47 +4,54 @@
 namespace Konfigurator\Network\Session;
 
 
+use Amp\Promise;
+use Amp\Socket\SocketAddress;
 use Konfigurator\Common\Interfaces\ClassHasLogger;
 use Konfigurator\Common\Traits\ClassHasLoggerTrait;
-use Konfigurator\Network\NetworkManagerInterface;
-use Ramsey\Uuid\Uuid;
+use Konfigurator\Network\Client\ClientNetworkHandlerInterface;
+use Konfigurator\Network\Packet\PacketHandlerInterface;
+use Konfigurator\Network\Packet\PacketInterface;
+use Konfigurator\Network\Session\Auth\AuthGuardInterface;
+use function Amp\call;
 
 abstract class AbstractSession implements SessionInterface, ClassHasLogger
 {
     use ClassHasLoggerTrait;
 
-    /** @var string[] */
-    private static array $aliveSessionIds = [];
+    /** @var ClientNetworkHandlerInterface */
+    private ClientNetworkHandlerInterface $networkHandler;
 
-    /** @var SessionManagerInterface */
-    private SessionManagerInterface $sessionManager;
+    /** @var PacketHandlerInterface */
+    private PacketHandlerInterface $packetHandler;
 
     /** @var SessionStorageInterface */
     private SessionStorageInterface $storage;
 
-    /** @var string|float|int|bool|null */
-    private $id;
+    /** @var AuthGuardInterface */
+    private AuthGuardInterface $authGuard;
 
 
     /**
      * AbstractClientSession constructor.
-     * @param SessionManagerInterface $sessionManager
+     * @param ClientNetworkHandlerInterface $networkHandler
      */
-    public function __construct(SessionManagerInterface $sessionManager)
+    public function __construct(ClientNetworkHandlerInterface $networkHandler)
     {
-        $this->sessionManager = $sessionManager;
-        $this->storage = $this->createStorage();
+        $this->networkHandler = $networkHandler;
 
-        $this->id = $this->_getId();
-        static::$aliveSessionIds[] = $this->id;
+        $this->storage = $this->createStorage();
+        $this->authGuard = $this->createAuthGuard();
+        $this->packetHandler = $this->createPacketHandler();
+
+        $this->getAuthGuard()->restoreAuth();
     }
 
     /**
-     * @return SessionStorageInterface
+     * @return AuthGuardInterface
      */
-    protected function createStorage(): SessionStorageInterface
+    public function getAuthGuard(): AuthGuardInterface
     {
-        return new SessionStorage($this);
+        return $this->authGuard;
     }
 
     /**
@@ -56,62 +63,91 @@ abstract class AbstractSession implements SessionInterface, ClassHasLogger
     }
 
     /**
+     * @return SocketAddress
+     */
+    public function getAddress(): SocketAddress
+    {
+        return $this->networkHandler->getAddress();
+    }
+
+    /**
+     * @param PacketInterface $packet
+     * @return Promise<void>
+     */
+    public function sendPacket(PacketInterface $packet): Promise
+    {
+        $this->getLogger()->debug("SEND packet: " . get_class($packet));
+
+        return $this->getNetworkHandler()->sendPacket(
+            $this->getPacketHandler()->preparePacket($packet)
+        );
+    }
+
+    /**
      * @return void
      */
-    public function __destruct()
+    public function disconnect(): void
     {
-        $idx = array_search($this->getId(), static::$aliveSessionIds);
-        if ($idx === false) {
-            $this->getLogger()->warning("A invalid session id found! May cause a little mem leak.", [
-                'id' => $this->getId(),
-            ]);
-            return;
-        }
-        unset(static::$aliveSessionIds[$idx]);
+        $this->getNetworkHandler()->disconnect();
     }
 
     /**
-     * Calls once when created a new instance
-     * @return string|float|int|bool|null
+     * @param string $packet
+     * @return Promise<void>
      */
-    protected function _getId()
+    public function handlePacket(string $packet): Promise
     {
-        while (1) {
+        return call(static function (self &$self, string $packet) {
 
-            $id = Uuid::uuid4();
+            $packet = yield $self->getPacketHandler()->handlePacket($self, $packet);
 
-            if (array_search($id, static::$aliveSessionIds) === false) {
-                return $id;
+            $self->getLogger()->debug("RECV packet: " . get_class($packet));
+
+            $response = yield $self->handleReceivedPacket($packet);
+            if (!empty($response)) {
+                yield $self->sendPacket($response);
             }
 
-            $this->getLogger()->debug("Generated the same random session uuid!", [
-                'id' => $id,
-            ]);
-
-        }
+        }, $this, $packet);
     }
 
     /**
-     * @return string|float|int|bool|null
+     * @return SessionStorageInterface
      */
-    public function getId()
+    protected function createStorage(): SessionStorageInterface
     {
-        return $this->id;
+        return new SessionStorage($this);
     }
 
     /**
-     * @return SessionManagerInterface
+     * @return PacketHandlerInterface
      */
-    public function getSessionManager(): SessionManagerInterface
+    protected function getPacketHandler(): PacketHandlerInterface
     {
-        return $this->sessionManager;
+        return $this->packetHandler;
     }
 
     /**
-     * @return NetworkManagerInterface
+     * @return ClientNetworkHandlerInterface
      */
-    public function getNetworkManager(): NetworkManagerInterface
+    protected function getNetworkHandler(): ClientNetworkHandlerInterface
     {
-        return $this->getSessionManager()->getNetworkManager();
+        return $this->networkHandler;
     }
+
+    /**
+     * @return AuthGuardInterface
+     */
+    protected abstract function createAuthGuard(): AuthGuardInterface;
+
+    /**
+     * @return PacketHandlerInterface
+     */
+    protected abstract function createPacketHandler(): PacketHandlerInterface;
+
+    /**
+     * @param PacketInterface $packet
+     * @return Promise<PacketInterface|null>
+     */
+    protected abstract function handleReceivedPacket(PacketInterface $packet): Promise;
 }
