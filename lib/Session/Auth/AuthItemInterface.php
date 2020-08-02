@@ -22,7 +22,7 @@ interface AuthItemInterface
      * @param SessionInterface $session
      * @return static
      */
-    public function withSession($session): self;
+    public function withSession($session);
 
     /**
      * @return SessionInterface|null
@@ -32,7 +32,7 @@ interface AuthItemInterface
     /**
      * @return static
      */
-    public function clearSession(): self;
+    public function clearSession();
 
     /**
      * @return array

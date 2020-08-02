@@ -16,7 +16,7 @@ interface SessionStorageInterface extends \ArrayAccess, \Countable
      * @param mixed $value
      * @return static
      */
-    public function store($key, $value): self;
+    public function store($key, $value);
 
     /**
      * @param $key
@@ -34,5 +34,5 @@ interface SessionStorageInterface extends \ArrayAccess, \Countable
      * @param $key
      * @return static
      */
-    public function remove($key): self;
+    public function remove($key);
 }

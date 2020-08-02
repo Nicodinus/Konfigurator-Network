@@ -21,7 +21,7 @@ interface ClientNetworkHandlerInterface extends NetworkHandlerInterface
      * @param NetworkEventDispatcher $eventDispatcher
      * @return static
      */
-    public static function fromServerConnection(ResourceSocket $connection, NetworkEventDispatcher $eventDispatcher): self;
+    public static function fromServerConnection(ResourceSocket $connection, NetworkEventDispatcher $eventDispatcher);
 
     /**
      * @param SocketAddress $address

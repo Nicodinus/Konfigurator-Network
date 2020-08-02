@@ -4,11 +4,14 @@
 namespace Konfigurator\Network\Session;
 
 
+use Amp\Deferred;
 use Amp\Promise;
 use Amp\Socket\SocketAddress;
 use Konfigurator\Common\Interfaces\ClassHasLogger;
 use Konfigurator\Common\Traits\ClassHasLoggerTrait;
+use Konfigurator\Network\Client\ClientNetworkHandlerEvent;
 use Konfigurator\Network\Client\ClientNetworkHandlerInterface;
+use Konfigurator\Network\NetworkEventDispatcher;
 use Konfigurator\Network\Packet\PacketHandlerInterface;
 use Konfigurator\Network\Packet\PacketInterface;
 use Konfigurator\Network\Session\Auth\AuthGuardInterface;
@@ -30,14 +33,25 @@ abstract class AbstractSession implements SessionInterface, ClassHasLogger
     /** @var AuthGuardInterface */
     private AuthGuardInterface $authGuard;
 
+    /** @var NetworkEventDispatcher */
+    private NetworkEventDispatcher $eventDispatcher;
+
+    /** @var array<string, Deferred[]> */
+    private array $packetListeners = [];
+
+    /** @var Deferred[] */
+    private array $anyPacketListeners = [];
+
 
     /**
      * AbstractClientSession constructor.
      * @param ClientNetworkHandlerInterface $networkHandler
+     * @param NetworkEventDispatcher $eventDispatcher
      */
-    public function __construct(ClientNetworkHandlerInterface $networkHandler)
+    public function __construct(ClientNetworkHandlerInterface $networkHandler, NetworkEventDispatcher $eventDispatcher)
     {
         $this->networkHandler = $networkHandler;
+        $this->eventDispatcher = $eventDispatcher;
 
         $this->storage = $this->createStorage();
         $this->authGuard = $this->createAuthGuard();
@@ -92,6 +106,44 @@ abstract class AbstractSession implements SessionInterface, ClassHasLogger
     }
 
     /**
+     * @param string|PacketInterface $packet
+     * @return Promise
+     */
+    public function awaitPacket($packet): Promise
+    {
+        if (!is_string($packet)) {
+
+            if (array_search($packet, class_implements(PacketInterface::class)) === false) {
+                throw new \LogicException("Invalid class!");
+            }
+
+            $packet = get_class($packet);
+        }
+
+        if (!isset($this->packetListeners[$packet])) {
+            $this->packetListeners[$packet] = [];
+        }
+
+        $defer = new Deferred();
+
+        $this->packetListeners[$packet][] = $defer;
+
+        return $defer->promise();
+    }
+
+    /**
+     * @return Promise
+     */
+    public function awaitAnyPacket(): Promise
+    {
+        $defer = new Deferred();
+
+        $this->anyPacketListeners[] = $defer;
+
+        return $defer->promise();
+    }
+
+    /**
      * @param string $packet
      * @return Promise<void>
      */
@@ -103,12 +155,43 @@ abstract class AbstractSession implements SessionInterface, ClassHasLogger
 
             $self->getLogger()->debug("RECV packet: " . get_class($packet));
 
+            $self->notifyPacketAwaiters($packet);
+
+            $self->getEventDispatcher()->dispatch(ClientNetworkHandlerEvent::PACKET_HANDLED($self->getNetworkHandler(), $packet));
+
             $response = yield $self->handleReceivedPacket($packet);
             if (!empty($response)) {
                 yield $self->sendPacket($response);
             }
 
         }, $this, $packet);
+    }
+
+    /**
+     * @param PacketInterface $packet
+     * @return void
+     */
+    protected function notifyPacketAwaiters(PacketInterface $packet): void
+    {
+        if (isset($this->packetListeners[get_class($packet)])) {
+
+            while ($listener = array_shift($this->packetListeners[get_class($packet)])) {
+                $listener->resolve($packet);
+            }
+
+        }
+
+        while ($listener = array_shift($this->anyPacketListeners)) {
+            $listener->resolve($packet);
+        }
+    }
+
+    /**
+     * @return NetworkEventDispatcher
+     */
+    protected function getEventDispatcher(): NetworkEventDispatcher
+    {
+        return $this->eventDispatcher;
     }
 
     /**

@@ -11,6 +11,7 @@ use Amp\Success;
 use Konfigurator\Network\AbstractNetworkRunnable;
 use Konfigurator\Network\NetworkHandlerInterface;
 use Konfigurator\Network\NetworkHandlerState;
+use Konfigurator\Network\Session\SessionInterface;
 use function Amp\call;
 
 abstract class AbstractClientNetworkRunnable extends AbstractNetworkRunnable
@@ -41,6 +42,14 @@ abstract class AbstractClientNetworkRunnable extends AbstractNetworkRunnable
     public function getNetworkHandler(): NetworkHandlerInterface
     {
         return parent::getNetworkHandler();
+    }
+
+    /**
+     * @return SessionInterface
+     */
+    public function getSession(): SessionInterface
+    {
+        return $this->getSessionManager()->getSession($this->getNetworkHandler()->getAddress());
     }
 
     /**

@@ -4,8 +4,6 @@
 namespace Konfigurator\Network\Session;
 
 
-use Konfigurator\Network\Client\Session\ClientSessionInterface;
-
 class SessionStorage implements SessionStorageInterface
 {
     /** @var SessionInterface */
@@ -38,7 +36,7 @@ class SessionStorage implements SessionStorageInterface
      * @param mixed $value
      * @return static
      */
-    public function store($key, $value): self
+    public function store($key, $value)
     {
         $this->data[$key] = $value;
         return $this;
@@ -70,7 +68,7 @@ class SessionStorage implements SessionStorageInterface
      * @param $key
      * @return static
      */
-    public function remove($key): self
+    public function remove($key)
     {
         if (!$this->has($key)) {
             throw new \LogicException("Can't find {$key} at the session store!");

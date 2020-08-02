@@ -54,7 +54,7 @@ class ClientNetworkHandler extends AbstractNetworkHandler implements ClientNetwo
      * @param NetworkEventDispatcher $eventDispatcher
      * @return static
      */
-    public static function fromServerConnection(ResourceSocket $connection, NetworkEventDispatcher $eventDispatcher): self
+    public static function fromServerConnection(ResourceSocket $connection, NetworkEventDispatcher $eventDispatcher)
     {
         $instance = new static($eventDispatcher);
 

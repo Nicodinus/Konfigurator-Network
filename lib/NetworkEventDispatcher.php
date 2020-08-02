@@ -46,7 +46,7 @@ class NetworkEventDispatcher
      * @param int $priority
      * @return static
      */
-    public function addListener(EventEnum $event, callable $callable, int $priority = 0): self
+    public function addListener(EventEnum $event, callable $callable, int $priority = 0)
     {
         $this->eventDispatcher->addListener($this->transformEventName($event), $callable, $priority);
         return $this;
@@ -57,7 +57,7 @@ class NetworkEventDispatcher
      * @param callable $callable
      * @return static
      */
-    public function removeListener(EventEnum $event, callable $callable): self
+    public function removeListener(EventEnum $event, callable $callable)
     {
         $this->eventDispatcher->removeListener($this->transformEventName($event), $callable);
         return $this;

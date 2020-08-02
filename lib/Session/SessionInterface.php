@@ -17,6 +17,17 @@ interface SessionInterface
     public function getAddress(): SocketAddress;
 
     /**
+     * @param string|PacketInterface $packet
+     * @return Promise
+     */
+    public function awaitPacket($packet): Promise;
+
+    /**
+     * @return Promise
+     */
+    public function awaitAnyPacket(): Promise;
+
+    /**
      * @param string $packet
      * @return Promise<void>
      */

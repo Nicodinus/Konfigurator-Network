@@ -95,7 +95,7 @@ abstract class AbstractNetworkHandler implements NetworkHandlerInterface, ClassH
      * @param NetworkHandlerState $state
      * @return static
      */
-    protected function setState(NetworkHandlerState $state): self
+    protected function setState(NetworkHandlerState $state)
     {
         $this->state = $state;
 
