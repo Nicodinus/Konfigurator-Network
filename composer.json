@@ -23,9 +23,8 @@
   },
   "repositories": [
     {
-      "type": "path",
-      "url": "../Common",
-      "symlink": true
+      "type": "github",
+      "url": "https://github.com/Nicodinus/Konfigurator-Common"
     },
     {
       "type": "github",
