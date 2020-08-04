@@ -5,6 +5,7 @@ namespace Konfigurator\Network\Session;
 
 
 use Amp\Deferred;
+use Amp\Failure;
 use Amp\Promise;
 use Amp\Socket\SocketAddress;
 use Konfigurator\Common\Interfaces\ClassHasLogger;
@@ -99,11 +100,27 @@ abstract class AbstractSession implements SessionInterface, ClassHasLogger
      */
     public function sendPacket(PacketInterface $packet): Promise
     {
-        $this->getLogger()->debug("SEND packet: " . get_class($packet));
+        return call(static function (self &$self) use ($packet) {
 
-        return $this->getNetworkHandler()->sendPacket(
-            $this->getPacketHandler()->preparePacket($packet)
-        );
+            try {
+
+                $self->getLogger()->debug("SEND packet: " . get_class($packet));
+
+                return yield $self->getNetworkHandler()->sendPacket(
+                    yield $self->getPacketHandler()->preparePacket($packet)
+                );
+
+            } catch (\Throwable $e) {
+
+                $self->getLogger()->warning("Sending packet error!", [
+                    'exception' => $e,
+                ]);
+
+                return new Failure($e);
+
+            }
+
+        }, $this);
     }
 
     /**

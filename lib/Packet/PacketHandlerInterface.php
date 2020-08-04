@@ -18,7 +18,7 @@ interface PacketHandlerInterface
 
     /**
      * @param PacketInterface $packet
-     * @return string
+     * @return Promise<string>
      */
-    public function preparePacket($packet): string;
+    public function preparePacket($packet): Promise;
 }
