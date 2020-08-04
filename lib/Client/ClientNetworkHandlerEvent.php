@@ -19,10 +19,10 @@ use Konfigurator\Network\Packet\PacketInterface;
  */
 class ClientNetworkHandlerEvent extends NetworkHandlerEvent
 {
-    private const CONNECTED = 'connected';
-    private const DISCONNECTED = 'disconnected';
-    private const PACKET_RECEIVED = 'packet_received';
-    private const PACKET_HANDLED = 'packet_handled';
+    protected const CONNECTED = 'connected';
+    protected const DISCONNECTED = 'disconnected';
+    protected const PACKET_RECEIVED = 'packet_received';
+    protected const PACKET_HANDLED = 'packet_handled';
 
     /**
      * @return ClientNetworkHandlerInterface|null

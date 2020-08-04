@@ -18,7 +18,7 @@ abstract class AbstractServerAuthGuard extends AbstractAuthGuard implements Serv
         if (empty($authItem)) {
             return false;
         }
-
+        
         $this->authorize($authItem);
 
         return true;

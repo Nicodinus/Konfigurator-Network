@@ -14,6 +14,6 @@ use Konfigurator\Common\Enums\StateEnum;
  */
 class NetworkHandlerState extends StateEnum
 {
-    private const RUNNING = 'running';
-    private const STOPPED = 'stopped';
+    protected const RUNNING = 'running';
+    protected const STOPPED = 'stopped';
 }
