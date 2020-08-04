@@ -20,11 +20,19 @@ use function Amp\call;
 
 class ClientNetworkHandler extends AbstractNetworkHandler implements ClientNetworkHandlerInterface
 {
+    const MAX_PACKET_LENGTH = 1024 * 1024 * 4;
+
     /** @var ResourceSocket|null */
     protected ?ResourceSocket $clientHandler;
 
     /** @var SocketAddress|null */
     protected ?SocketAddress $address;
+
+    /** @var int */
+    protected int $packetCounter;
+
+    /** @var string[]|array<int, array<int, string>> */
+    protected array $unprocessedPackets;
 
 
     /**
@@ -37,6 +45,9 @@ class ClientNetworkHandler extends AbstractNetworkHandler implements ClientNetwo
 
         $this->clientHandler = null;
         $this->address = null;
+
+        $this->packetCounter = 0;
+        $this->unprocessedPackets = [];
     }
 
     /**
@@ -152,9 +163,31 @@ class ClientNetworkHandler extends AbstractNetworkHandler implements ClientNetwo
 
             try {
 
-                $self->getLogger()->debug("SEND: packet length " . strlen($packet));
+                $packetId = $self->packetCounter++;
+                $packetLength = strlen($packet);
+                $chunkId = 0;
+                $sendBytes = 0;
+                $chunkLength = 8180;
+                //$chunksCount = intval(ceil($packetLength / $chunkLength));
 
-                yield $self->clientHandler->write($packet);
+                $promises = [];
+
+                do {
+
+                    $chunk = substr($packet, $sendBytes, $chunkLength);
+                    $chunk = pack("NNnn", $packetId, $packetLength, strlen($chunk), $chunkId++) . $chunk;
+
+                    //dump(strlen($chunk));
+
+                    $promises[] = $self->clientHandler->write($chunk);
+
+                    $sendBytes += $chunkLength;
+
+                } while ($sendBytes < $packetLength);
+
+                yield Promise\all($promises);
+
+                $self->getLogger()->debug("SEND: packet length {$packetLength}");
 
             } catch (\Throwable $e) {
 
@@ -184,11 +217,76 @@ class ClientNetworkHandler extends AbstractNetworkHandler implements ClientNetwo
 
             $packet = yield $self->clientHandler->read();
 
-            if ($packet) {
+            if ($packet && strlen($packet) > 12) {
 
-                $self->getLogger()->debug("RECV: packet length " . strlen($packet));
+                $unpack = unpack('NpacketId/NpacketLength/nchunkLength/nchunkId', substr($packet, 0, 12));
+                //dump($unpack);
 
-                yield $self->getEventDispatcher()->dispatch(ClientNetworkHandlerEvent::PACKET_RECEIVED($self, $packet));
+                $packetId = $unpack['packetId'];
+                $packetLength = $unpack['packetLength'];
+                $chunkLength = $unpack['chunkLength'];
+                $chunkId = $unpack['chunkId'];
+
+                if ($packetLength < 1 || $packetLength > static::MAX_PACKET_LENGTH || $chunkLength < 1) {
+                    if (isset($self->unprocessedPackets[$packetId])) {
+                        unset($self->unprocessedPackets[$packetId]);
+                    }
+                    $self->getLogger()->debug("RECV: invalid packet!");
+                    return;
+                }
+
+                if ($chunkId == 0 && $chunkLength == $packetLength) {
+
+                    $packet = substr($packet, 12);
+
+                    $self->getLogger()->debug("RECV: packet length " . strlen($packet));
+
+                    yield $self->getEventDispatcher()->dispatch(ClientNetworkHandlerEvent::PACKET_RECEIVED($self, $packet));
+                    return;
+
+                }
+
+                $packet = substr($packet, 12);
+
+                if (strlen($packet) != $chunkLength) {
+                    if (isset($self->unprocessedPackets[$packetId])) {
+                        unset($self->unprocessedPackets[$packetId]);
+                    }
+                    $self->getLogger()->debug("RECV: invalid packet!");
+                    return;
+                }
+
+                if (!isset($self->unprocessedPackets[$packetId])) {
+                    $self->unprocessedPackets[$packetId] = [
+                        'recvLength' => 0,
+                        'packetLength' => $packetLength,
+                        'chunks' => [],
+                    ];
+                }
+
+                $self->unprocessedPackets[$packetId]['recvLength'] += $chunkLength;
+                $self->unprocessedPackets[$packetId]['chunks'][$chunkId] = $packet;
+
+                if ($self->unprocessedPackets[$packetId]['recvLength'] == $self->unprocessedPackets[$packetId]['packetLength']) {
+
+                    ksort($self->unprocessedPackets[$packetId]['chunks'], SORT_NUMERIC);
+                    $packet = implode('', $self->unprocessedPackets[$packetId]['chunks']);
+                    unset($self->unprocessedPackets[$packetId]);
+
+                    \gc_collect_cycles();
+
+                    $self->getLogger()->debug("RECV: packet length " . strlen($packet));
+
+                    yield $self->getEventDispatcher()->dispatch(ClientNetworkHandlerEvent::PACKET_RECEIVED($self, $packet));
+                    return;
+
+                } else if ($self->unprocessedPackets[$packetId]['recvLength'] >= $self->unprocessedPackets[$packetId]['packetLength']) {
+
+                    unset($self->unprocessedPackets[$packetId]);
+                    $self->getLogger()->debug("RECV: invalid packet!");
+                    return;
+
+                }
 
             }
 

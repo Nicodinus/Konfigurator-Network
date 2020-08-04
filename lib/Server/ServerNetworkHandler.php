@@ -217,6 +217,7 @@ class ServerNetworkHandler extends AbstractNetworkHandler implements ServerNetwo
     {
         return Server::listen("tcp://{$address}", (new BindContext())
             ->withTcpNoDelay()
+            //->withChunkSize(16384)
         );
     }
 

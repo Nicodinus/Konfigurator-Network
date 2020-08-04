@@ -5,6 +5,7 @@ namespace Konfigurator\Network\Session\Auth;
 
 
 use Konfigurator\Network\Session\SessionInterface;
+use Konfigurator\SystemService\Network\Session\Auth\AccessLevelEnum;
 
 interface AuthItemInterface
 {
@@ -28,6 +29,11 @@ interface AuthItemInterface
      * @return SessionInterface|null
      */
     public function getSession(): ?SessionInterface;
+
+    /**
+     * @return AccessLevelEnum
+     */
+    public function getAccessLevel(): AccessLevelEnum;
 
     /**
      * @return static

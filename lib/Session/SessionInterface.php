@@ -17,6 +17,11 @@ interface SessionInterface
     public function getAddress(): SocketAddress;
 
     /**
+     * @return bool
+     */
+    public function isAlive(): bool;
+
+    /**
      * @param string|PacketInterface $packet
      * @return Promise
      */
@@ -42,6 +47,13 @@ interface SessionInterface
      * @return AuthGuardInterface
      */
     public function getAuthGuard(): AuthGuardInterface;
+
+    /**
+     * @param string $classname
+     * @param $args
+     * @return PacketInterface
+     */
+    public function createPacket(string $classname, ...$args): PacketInterface;
 
     /**
      * @param PacketInterface $packet

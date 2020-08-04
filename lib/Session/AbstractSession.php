@@ -12,6 +12,7 @@ use Konfigurator\Common\Traits\ClassHasLoggerTrait;
 use Konfigurator\Network\Client\ClientNetworkHandlerEvent;
 use Konfigurator\Network\Client\ClientNetworkHandlerInterface;
 use Konfigurator\Network\NetworkEventDispatcher;
+use Konfigurator\Network\NetworkHandlerState;
 use Konfigurator\Network\Packet\PacketHandlerInterface;
 use Konfigurator\Network\Packet\PacketInterface;
 use Konfigurator\Network\Session\Auth\AuthGuardInterface;
@@ -58,6 +59,14 @@ abstract class AbstractSession implements SessionInterface, ClassHasLogger
         $this->packetHandler = $this->createPacketHandler();
 
         $this->getAuthGuard()->restoreAuth();
+    }
+
+    /**
+     * @return bool
+     */
+    public function isAlive(): bool
+    {
+        return $this->getNetworkHandler()->getState()->equals(NetworkHandlerState::RUNNING());
     }
 
     /**
@@ -216,6 +225,16 @@ abstract class AbstractSession implements SessionInterface, ClassHasLogger
     protected function getNetworkHandler(): ClientNetworkHandlerInterface
     {
         return $this->networkHandler;
+    }
+
+    /**
+     * @param string $classname
+     * @param $args
+     * @return PacketInterface
+     */
+    public function createPacket(string $classname, ...$args): PacketInterface
+    {
+        return new $classname($this, false, ...$args);
     }
 
     /**
