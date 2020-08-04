@@ -78,7 +78,7 @@ abstract class AbstractClientNetworkRunnable extends AbstractNetworkRunnable
 
                 } catch (\Throwable $exception) {
 
-                    $self->exceptionHandler($exception);
+                    $self->handleException($exception);
                     //ignore
                 }
 

@@ -4,8 +4,8 @@
 namespace Konfigurator\Network\Session\Auth;
 
 
+use Konfigurator\Common\Enums\AccessLevelEnum;
 use Konfigurator\Network\Session\SessionInterface;
-use Konfigurator\SystemService\Network\Session\Auth\AccessLevelEnum;
 
 interface AuthItemInterface
 {

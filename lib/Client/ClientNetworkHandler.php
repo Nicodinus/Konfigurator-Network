@@ -306,6 +306,6 @@ class ClientNetworkHandler extends AbstractNetworkHandler implements ClientNetwo
      */
     protected function createConnectionHandler(SocketAddress $address, ?ConnectContext $connectContext = null): Promise
     {
-        return Socket\connect("tcp://{$address}", $connectContext);;
+        return Socket\connect("tcp://{$address}", $connectContext);
     }
 }

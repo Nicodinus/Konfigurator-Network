@@ -59,7 +59,7 @@ abstract class AbstractServerNetworkRunnable extends AbstractNetworkRunnable
 
                 } catch (\Throwable $exception) {
 
-                    $self->exceptionHandler($exception);
+                    $self->handleException($exception);
                     //ignore
                 }
 

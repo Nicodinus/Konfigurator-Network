@@ -92,7 +92,7 @@ abstract class AbstractNetworkRunnable extends AbstractLoopRunnable implements C
      * @param \Throwable $exception
      * @param string|null $message
      */
-    protected function exceptionHandler(\Throwable $exception, ?string $message = null): void
+    protected function handleException(\Throwable $exception, ?string $message = null): void
     {
         $this->getLogger()->error($message ?? "Exception handle", [
             'exception' => $exception,
