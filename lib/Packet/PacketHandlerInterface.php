@@ -34,5 +34,5 @@ interface PacketHandlerInterface
      * @param string $id
      * @return string|PacketInterface|null
      */
-    public function getPacketClass(string $id): ?string;
+    public function findPacketClassById(string $id): ?string;
 }
