@@ -251,7 +251,7 @@ abstract class AbstractSession implements SessionInterface, ClassHasLogger
      */
     public function createPacket(string $classname, ...$args): PacketInterface
     {
-        return new $classname($this, false, ...$args);
+        return $this->getPacketHandler()->createPacket($this, $classname, ...$args);
     }
 
     /**
