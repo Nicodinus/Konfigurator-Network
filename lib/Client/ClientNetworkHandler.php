@@ -5,6 +5,7 @@ namespace Konfigurator\Network\Client;
 
 
 use Amp\CancelledException;
+use Amp\Delayed;
 use Amp\Failure;
 use Amp\Promise;
 use Amp\Socket;
@@ -16,6 +17,7 @@ use Amp\Success;
 use Konfigurator\Network\AbstractNetworkHandler;
 use Konfigurator\Network\NetworkEventDispatcher;
 use Konfigurator\Network\NetworkHandlerState;
+use function Amp\asyncCall;
 use function Amp\call;
 
 class ClientNetworkHandler extends AbstractNetworkHandler implements ClientNetworkHandlerInterface
@@ -63,19 +65,29 @@ class ClientNetworkHandler extends AbstractNetworkHandler implements ClientNetwo
     /**
      * @param ResourceSocket $connection
      * @param NetworkEventDispatcher $eventDispatcher
-     * @return static
+     * @return Promise<static>
      */
-    public static function fromServerConnection(ResourceSocket $connection, NetworkEventDispatcher $eventDispatcher)
+    public static function fromServerConnection(ResourceSocket $connection, NetworkEventDispatcher $eventDispatcher): Promise
     {
-        $instance = new static($eventDispatcher);
+        return call(static function (ResourceSocket $connection, NetworkEventDispatcher $eventDispatcher) {
 
-        $instance->clientHandler = $connection;
-        $instance->address = $connection->getRemoteAddress();
+            try {
 
-        $instance->setState(NetworkHandlerState::RUNNING());
-        $instance->getEventDispatcher()->dispatch(ClientNetworkHandlerEvent::CONNECTED($instance));
+                $instance = new static($eventDispatcher);
 
-        return $instance;
+                $instance->clientHandler = $connection;
+                $instance->address = $connection->getRemoteAddress();
+
+                $instance->setState(NetworkHandlerState::RUNNING());
+                yield $instance->getEventDispatcher()->dispatch(ClientNetworkHandlerEvent::CONNECTED($instance));
+
+                return $instance;
+
+            } catch (\Throwable $e) {
+                return new Failure($e);
+            }
+
+        }, $connection, $eventDispatcher);
     }
 
     /**

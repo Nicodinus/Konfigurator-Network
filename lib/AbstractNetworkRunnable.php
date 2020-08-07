@@ -4,11 +4,13 @@
 namespace Konfigurator\Network;
 
 
+use Amp\Delayed;
 use Amp\Promise;
 use Konfigurator\Common\AbstractLoopRunnable;
 use Konfigurator\Common\Interfaces\ClassHasLogger;
 use Konfigurator\Common\Traits\ClassHasLoggerTrait;
 use Konfigurator\Network\Session\SessionManagerInterface;
+use function Amp\asyncCall;
 
 abstract class AbstractNetworkRunnable extends AbstractLoopRunnable implements ClassHasLogger
 {
@@ -86,6 +88,28 @@ abstract class AbstractNetworkRunnable extends AbstractLoopRunnable implements C
         parent::shutdown();
 
         $this->getNetworkHandler()->shutdown();
+    }
+
+    /**
+     * @return void
+     */
+    public function run(): void
+    {
+        asyncCall(static function (self &$self) {
+
+            yield new Delayed(0);
+
+            try {
+
+                while (!$self->isShutdownPending()) {
+                    yield $self->handle();
+                }
+
+            } catch (\Throwable $e) {
+                $self->handleException($e, "Runnable exception");
+            }
+
+        }, $this);
     }
 
     /**

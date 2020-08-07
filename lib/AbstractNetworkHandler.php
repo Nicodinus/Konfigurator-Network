@@ -11,6 +11,7 @@ use Amp\Promise;
 use Konfigurator\Common\Interfaces\ClassHasLogger;
 use Konfigurator\Common\Traits\ClassHasLoggerTrait;
 use Konfigurator\Common\Traits\GracefulShutdownTrait;
+use Psr\Log\NullLogger;
 use function Amp\asyncCall;
 use function Amp\call;
 
@@ -36,6 +37,7 @@ abstract class AbstractNetworkHandler implements NetworkHandlerInterface, ClassH
     {
         $this->eventDispatcher = $eventDispatcher;
         $this->state = NetworkHandlerState::STOPPED();
+        $this->logger = new NullLogger();
     }
 
     /**

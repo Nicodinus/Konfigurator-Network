@@ -19,6 +19,7 @@ use Konfigurator\Network\Client\ClientNetworkHandlerEvent;
 use Konfigurator\Network\Client\ClientNetworkHandlerInterface;
 use Konfigurator\Network\NetworkEventDispatcher;
 use Konfigurator\Network\NetworkHandlerState;
+use Psr\Log\NullLogger;
 use function Amp\asyncCall;
 use function Amp\call;
 
@@ -128,10 +129,26 @@ class ServerNetworkHandler extends AbstractNetworkHandler implements ServerNetwo
 
                         $self->getLogger()->debug("Connection established with {$socket->getRemoteAddress()}");
 
-                        $self->createClientNetworkHandler($socket);
+                        try {
 
-                        if (!empty($self->_handleAcceptor)) {
-                            $self->_handleAcceptor->resolve();
+                            yield $self->createClientNetworkHandler($socket);
+
+                            if (!empty($self->_handleAcceptor)) {
+                                $self->_handleAcceptor->resolve();
+                            }
+
+                        } catch (\Throwable $e) {
+
+                            $self->getLogger()->info("Server network handle client error!", [
+                                'exception' => $e,
+                            ]);
+
+                            if (!$socket->isClosed()) {
+                                $socket->close();
+                            }
+
+                            $self->removeClient($socket->getRemoteAddress());
+
                         }
 
                     }
@@ -186,6 +203,11 @@ class ServerNetworkHandler extends AbstractNetworkHandler implements ServerNetwo
     {
         return call(static function (self &$self) {
 
+            if (empty($self->serverHandler) || $self->serverHandler->isClosed()) {
+                $self->close();
+                return;
+            }
+
             if (!empty($self->_handleAcceptor)) {
                 yield $self->_handleAcceptor->promise();
                 $self->_handleAcceptor = null;
@@ -194,11 +216,6 @@ class ServerNetworkHandler extends AbstractNetworkHandler implements ServerNetwo
                     $self->_handleAcceptor = new Deferred();
                     return;
                 }
-            }
-
-            if (empty($self->serverHandler) || $self->serverHandler->isClosed()) {
-                $self->close();
-                return;
             }
 
             foreach ($self->clientHandlers as $clientHandler) {
@@ -223,13 +240,24 @@ class ServerNetworkHandler extends AbstractNetworkHandler implements ServerNetwo
 
     /**
      * @param ResourceSocket $socket
-     * @return ClientNetworkHandlerInterface
+     * @return Promise<ClientNetworkHandlerInterface>
      */
-    protected function createClientNetworkHandler(ResourceSocket $socket): ClientNetworkHandlerInterface
+    protected function createClientNetworkHandler(ResourceSocket $socket): Promise
     {
-        $instance = ClientNetworkHandler::fromServerConnection($socket, $this->getEventDispatcher());
-        $instance->setLogger($this->getLogger());
-        return $instance;
+        return call(static function (self &$self, ResourceSocket $socket) {
+
+            try {
+
+                /** @var ClientNetworkHandler $instance */
+                $instance = yield ClientNetworkHandler::fromServerConnection($socket, $self->getEventDispatcher());
+                $instance->setLogger($self->getLogger());
+                return $instance;
+
+            } catch (\Throwable $e) {
+                return new Failure($e);
+            }
+
+        }, $this, $socket);
     }
 
     /**
