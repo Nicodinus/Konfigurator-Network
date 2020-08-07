@@ -11,6 +11,11 @@ interface PacketInterface
     /**
      * @return mixed
      */
+    public static function getId();
+
+    /**
+     * @return mixed
+     */
     public function getData();
 
     /**

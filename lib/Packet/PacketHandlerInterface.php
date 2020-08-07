@@ -21,4 +21,16 @@ interface PacketHandlerInterface
      * @return Promise<string>
      */
     public function preparePacket($packet): Promise;
+
+    /**
+     * @param string $classname
+     * @return PacketInterface|null
+     */
+    public function createPacket(string $classname): ?PacketInterface;
+
+    /**
+     * @param string $id
+     * @return string|PacketInterface|null
+     */
+    public function getPacketClass(string $id): ?string;
 }
