@@ -31,8 +31,8 @@ interface PacketHandlerInterface
     public function createPacket(SessionInterface $session, string $classname, ...$args): ?PacketInterface;
 
     /**
-     * @param string $id
+     * @param mixed $id
      * @return string|PacketInterface|null
      */
-    public function findPacketClassById(string $id): ?string;
+    public function findPacketClassById($id): ?string;
 }
