@@ -36,7 +36,15 @@ abstract class AbstractSessionManager implements SessionManagerInterface, ClassH
 
         $this->getEventDispatcher()
             ->addListener(ClientNetworkHandlerEvent::CONNECTED(), function (ClientNetworkHandlerEvent $event) use (&$self) {
-                $self->createSession($event->getNetworkHandler());
+                try {
+                    $self->createSession($event->getNetworkHandler());
+                } catch (\Throwable $e) {
+                    $self->getLogger()->error("SESSION CREATE EXCEPTION", [
+                        'exception' => $e,
+                    ]);
+
+                    $event->getNetworkHandler()->disconnect();
+                }
             })
             ->addListener(ClientNetworkHandlerEvent::DISCONNECTED(), function (ClientNetworkHandlerEvent $event) use (&$self) {
                 $self->removeSession($event->getNetworkHandler()->getAddress());
