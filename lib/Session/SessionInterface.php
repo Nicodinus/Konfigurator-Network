@@ -23,12 +23,18 @@ interface SessionInterface
 
     /**
      * @param string|PacketInterface $packet
-     * @return Promise
+     * @return Promise<PacketInterface>
      */
     public function awaitPacket($packet): Promise;
 
     /**
-     * @return Promise
+     * @param mixed $id
+     * @return Promise<PacketInterface>
+     */
+    public function awaitPacketId($id): Promise;
+
+    /**
+     * @return Promise<PacketInterface>
      */
     public function awaitAnyPacket(): Promise;
 

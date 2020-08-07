@@ -133,7 +133,7 @@ abstract class AbstractSession implements SessionInterface, ClassHasLogger
 
     /**
      * @param string|PacketInterface $packet
-     * @return Promise
+     * @return Promise<PacketInterface>
      */
     public function awaitPacket($packet): Promise
     {
@@ -158,7 +158,21 @@ abstract class AbstractSession implements SessionInterface, ClassHasLogger
     }
 
     /**
-     * @return Promise
+     * @param mixed $id
+     * @return Promise<PacketInterface>
+     */
+    public function awaitPacketId($id): Promise
+    {
+        $packetClass = $this->getPacketHandler()->findPacketClassById($id);
+        if (!$packetClass) {
+            return new Failure(new \LogicException("Can't find packet id {$id}!"));
+        }
+
+        return $this->awaitPacket($packetClass);
+    }
+
+    /**
+     * @return Promise<PacketInterface>
      */
     public function awaitAnyPacket(): Promise
     {
