@@ -255,6 +255,15 @@ abstract class AbstractSession implements SessionInterface, ClassHasLogger
     }
 
     /**
+     * @param mixed $id
+     * @return PacketInterface|string|null
+     */
+    public function findPacketClassById($id): ?string
+    {
+        return $this->getPacketHandler()->findPacketClassById($id);
+    }
+
+    /**
      * @return AuthGuardInterface
      */
     protected abstract function createAuthGuard(): AuthGuardInterface;

@@ -56,6 +56,12 @@ interface SessionInterface
     public function createPacket(string $classname, ...$args): PacketInterface;
 
     /**
+     * @param mixed $id
+     * @return PacketInterface|string|null
+     */
+    public function findPacketClassById($id): ?string;
+
+    /**
      * @param PacketInterface $packet
      * @return Promise<void>
      */
