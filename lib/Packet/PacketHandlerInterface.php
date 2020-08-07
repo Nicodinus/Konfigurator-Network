@@ -25,9 +25,10 @@ interface PacketHandlerInterface
     /**
      * @param SessionInterface $session
      * @param string $classname
+     * @param mixed ...$args
      * @return PacketInterface|null
      */
-    public function createPacket(SessionInterface $session, string $classname): ?PacketInterface;
+    public function createPacket(SessionInterface $session, string $classname, ...$args): ?PacketInterface;
 
     /**
      * @param string $id
