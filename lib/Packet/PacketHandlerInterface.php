@@ -14,19 +14,20 @@ interface PacketHandlerInterface
      * @param string $packet
      * @return Promise<PacketInterface>
      */
-    public function handlePacket($session, string $packet): Promise;
+    public function handlePacket(SessionInterface $session, string $packet): Promise;
 
     /**
      * @param PacketInterface $packet
      * @return Promise<string>
      */
-    public function preparePacket($packet): Promise;
+    public function preparePacket(PacketInterface $packet): Promise;
 
     /**
+     * @param SessionInterface $session
      * @param string $classname
      * @return PacketInterface|null
      */
-    public function createPacket(string $classname): ?PacketInterface;
+    public function createPacket(SessionInterface $session, string $classname): ?PacketInterface;
 
     /**
      * @param string $id
