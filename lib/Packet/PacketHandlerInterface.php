@@ -4,6 +4,7 @@
 namespace Konfigurator\Network\Packet;
 
 
+use Amp\Failure;
 use Amp\Promise;
 use Konfigurator\Network\Session\SessionInterface;
 
@@ -11,29 +12,27 @@ interface PacketHandlerInterface
 {
     /**
      * @param SessionInterface $session
-     * @param string $packet
-     * @return Promise<PacketInterface>
+     * @param string $rawPacket
+     *
+     * @return Promise<PacketInterface>|Failure<\Throwable>
      */
-    public function handlePacket(SessionInterface $session, string $packet): Promise;
-
-    /**
-     * @param PacketInterface $packet
-     * @return Promise<string>
-     */
-    public function preparePacket(PacketInterface $packet): Promise;
+    public function handlePacket(SessionInterface $session, string $rawPacket): Promise;
 
     /**
      * @param SessionInterface $session
-     * @param string $classname
-     * @param bool $isRemote
+     * @param mixed $id
      * @param mixed ...$args
-     * @return PacketInterface|null
+     *
+     * @return PacketInterface
+     *
+     * @throws \Throwable
      */
-    public function createPacket(SessionInterface $session, string $classname, bool $isRemote = false, ...$args): ?PacketInterface;
+    public function createPacket(SessionInterface $session, $id, ...$args): PacketInterface;
 
     /**
      * @param mixed $id
-     * @return string|PacketInterface|null
+     *
+     * @return bool
      */
-    public function findPacketClassById($id): ?string;
+    public function isPacketExist($id): bool;
 }

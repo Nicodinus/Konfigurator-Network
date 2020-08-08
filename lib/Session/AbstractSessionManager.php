@@ -50,7 +50,15 @@ abstract class AbstractSessionManager implements SessionManagerInterface, ClassH
                 $self->removeSession($event->getNetworkHandler()->getAddress());
             })
             ->addListener(ClientNetworkHandlerEvent::PACKET_RECEIVED(), function (ClientNetworkHandlerEvent $event) use (&$self) {
-                yield $self->getSession($event->getNetworkHandler()->getAddress())->handlePacket($event->getEventData());
+                try {
+                    yield $self->getSession($event->getNetworkHandler()->getAddress())->handlePacket($event->getEventData());
+                } catch (\Throwable $e) {
+                    $self->getLogger()->error("SESSION PACKET HANDLE EXCEPTION", [
+                        'exception' => $e,
+                    ]);
+
+                    $event->getNetworkHandler()->disconnect();
+                }
             })
         ;
     }

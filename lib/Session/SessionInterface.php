@@ -4,6 +4,7 @@
 namespace Konfigurator\Network\Session;
 
 
+use Amp\Failure;
 use Amp\Promise;
 use Amp\Socket\SocketAddress;
 use Konfigurator\Network\Packet\PacketInterface;
@@ -22,24 +23,20 @@ interface SessionInterface
     public function isAlive(): bool;
 
     /**
-     * @param string|PacketInterface $packet
-     * @return Promise<PacketInterface>
-     */
-    public function awaitPacket($packet): Promise;
-
-    /**
      * @param mixed $id
-     * @return Promise<PacketInterface>
+     *
+     * @return Promise<PacketInterface|null>|Failure<\Throwable>
      */
-    public function awaitPacketId($id): Promise;
+    public function awaitPacket($id): Promise;
 
     /**
-     * @return Promise<PacketInterface>
+     * @return Promise<PacketInterface|null>
      */
     public function awaitAnyPacket(): Promise;
 
     /**
      * @param string $packet
+     *
      * @return Promise<void>
      */
     public function handlePacket(string $packet): Promise;
@@ -55,21 +52,19 @@ interface SessionInterface
     public function getAuthGuard(): AuthGuardInterface;
 
     /**
-     * @param string $classname
-     * @param $args
-     * @return PacketInterface
-     */
-    public function createPacket(string $classname, ...$args): PacketInterface;
-
-    /**
      * @param mixed $id
-     * @return PacketInterface|string|null
+     * @param mixed ...$args
+     *
+     * @return PacketInterface
+     *
+     * @throws \Throwable
      */
-    public function findPacketClassById($id): ?string;
+    public function createPacket($id, ...$args): PacketInterface;
 
     /**
      * @param PacketInterface $packet
-     * @return Promise<void>
+     *
+     * @return Promise<void>|Failure<\Throwable>
      */
     public function sendPacket(PacketInterface $packet): Promise;
 

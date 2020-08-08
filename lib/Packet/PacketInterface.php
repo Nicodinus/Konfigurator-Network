@@ -4,6 +4,8 @@
 namespace Konfigurator\Network\Packet;
 
 
+use Amp\Failure;
+use Amp\Promise;
 use Konfigurator\Network\Session\SessionInterface;
 
 interface PacketInterface
@@ -14,11 +16,6 @@ interface PacketInterface
     public static function getId();
 
     /**
-     * @return mixed
-     */
-    public function getData();
-
-    /**
      * @return bool
      */
     public function isRemote(): bool;
@@ -27,4 +24,10 @@ interface PacketInterface
      * @return SessionInterface
      */
     public function getSession(): SessionInterface;
+
+
+    /**
+     * @return Promise<string>|Failure<\Throwable>
+     */
+    public function transform(): Promise;
 }

@@ -60,6 +60,24 @@ abstract class AbstractSession implements SessionInterface, ClassHasLogger
         $this->packetHandler = $this->createPacketHandler();
 
         $this->getAuthGuard()->restoreAuth();
+
+        $self = &$this;
+
+        $this->eventDispatcher
+            ->addListener(ClientNetworkHandlerEvent::DISCONNECTED(), function () use (&$self) {
+                foreach ($self->packetListeners as $arr) {
+                    /** @var Deferred $defer */
+                    foreach ($arr as $defer) {
+                        $defer->resolve();
+                    }
+                }
+                $self->packetListeners = [];
+                foreach ($self->anyPacketListeners as $defer) {
+                    $defer->resolve();
+                }
+                $self->anyPacketListeners = [];
+            })
+        ;
     }
 
     /**
@@ -96,7 +114,8 @@ abstract class AbstractSession implements SessionInterface, ClassHasLogger
 
     /**
      * @param PacketInterface $packet
-     * @return Promise<void>
+     *
+     * @return Promise<void>|Failure<\Throwable>
      */
     public function sendPacket(PacketInterface $packet): Promise
     {
@@ -132,47 +151,28 @@ abstract class AbstractSession implements SessionInterface, ClassHasLogger
     }
 
     /**
-     * @param string|PacketInterface $packet
-     * @return Promise<PacketInterface>
+     * @param mixed $id
+     * @return Promise<PacketInterface|null>|Failure<\Throwable>
      */
-    public function awaitPacket($packet): Promise
+    public function awaitPacket($id): Promise
     {
-        if (!is_string($packet)) {
-
-            if (array_search($packet, class_implements(PacketInterface::class)) === false) {
-                throw new \LogicException("Invalid class!");
-            }
-
-            $packet = get_class($packet);
+        if (!$this->getPacketHandler()->isPacketExist($id)) {
+            return new Failure(new \LogicException("Invalid packet id {$id}!"));
         }
 
-        if (!isset($this->packetListeners[$packet])) {
-            $this->packetListeners[$packet] = [];
+        if (!isset($this->packetListeners[$id])) {
+            $this->packetListeners[$id] = [];
         }
 
         $defer = new Deferred();
 
-        $this->packetListeners[$packet][] = $defer;
+        $this->packetListeners[$id][] = $defer;
 
         return $defer->promise();
     }
 
     /**
-     * @param mixed $id
-     * @return Promise<PacketInterface>
-     */
-    public function awaitPacketId($id): Promise
-    {
-        $packetClass = $this->getPacketHandler()->findPacketClassById($id);
-        if (!$packetClass) {
-            return new Failure(new \LogicException("Can't find packet id {$id}!"));
-        }
-
-        return $this->awaitPacket($packetClass);
-    }
-
-    /**
-     * @return Promise<PacketInterface>
+     * @return Promise<PacketInterface|null>
      */
     public function awaitAnyPacket(): Promise
     {
@@ -191,17 +191,23 @@ abstract class AbstractSession implements SessionInterface, ClassHasLogger
     {
         return call(static function (self &$self, string $packet) {
 
-            $packet = yield $self->getPacketHandler()->handlePacket($self, $packet);
+            try {
 
-            $self->getLogger()->debug("RECV packet: " . get_class($packet));
+                $packet = yield $self->getPacketHandler()->handlePacket($self, $packet);
 
-            $self->notifyPacketAwaiters($packet);
+                $self->getLogger()->debug("RECV packet: " . get_class($packet));
 
-            $self->getEventDispatcher()->dispatch(ClientNetworkHandlerEvent::PACKET_HANDLED($self->getNetworkHandler(), $packet));
+                $self->notifyPacketListeners($packet);
 
-            $response = yield $self->handleReceivedPacket($packet);
-            if (!empty($response)) {
-                yield $self->sendPacket($response);
+                yield $self->getEventDispatcher()->dispatch(ClientNetworkHandlerEvent::PACKET_HANDLED($self->getNetworkHandler(), $packet));
+
+                $response = yield $self->handleReceivedPacket($packet);
+                if (!empty($response)) {
+                    yield $self->sendPacket($response);
+                }
+
+            } catch (\Throwable $e) {
+                return new Failure($e);
             }
 
         }, $this, $packet);
@@ -211,11 +217,11 @@ abstract class AbstractSession implements SessionInterface, ClassHasLogger
      * @param PacketInterface $packet
      * @return void
      */
-    protected function notifyPacketAwaiters(PacketInterface $packet): void
+    protected function notifyPacketListeners(PacketInterface $packet): void
     {
-        if (isset($this->packetListeners[get_class($packet)])) {
+        if (isset($this->packetListeners[$packet::getId()])) {
 
-            while ($listener = array_shift($this->packetListeners[get_class($packet)])) {
+            while ($listener = array_shift($this->packetListeners[$packet::getId()])) {
                 $listener->resolve($packet);
             }
 
@@ -259,26 +265,20 @@ abstract class AbstractSession implements SessionInterface, ClassHasLogger
     }
 
     /**
-     * @param string $classname
-     * @param $args
-     * @return PacketInterface
-     */
-    public function createPacket(string $classname, ...$args): PacketInterface
-    {
-        $packet = $this->getPacketHandler()->createPacket($this, $classname, false, ...$args);
-        if (!$packet) {
-            throw new \LogicException("Can't create packet {$classname}!");
-        }
-        return $packet;
-    }
-
-    /**
      * @param mixed $id
-     * @return PacketInterface|string|null
+     * @param mixed ...$args
+     *
+     * @return PacketInterface
+     *
+     * @throws \Throwable
      */
-    public function findPacketClassById($id): ?string
+    public function createPacket($id, ...$args): PacketInterface
     {
-        return $this->getPacketHandler()->findPacketClassById($id);
+        if (!$this->getPacketHandler()->isPacketExist($id)) {
+            throw new \LogicException("Invalid packet id {$id}!");
+        }
+
+        return $this->getPacketHandler()->createPacket($this, $id, ...$args);
     }
 
     /**
