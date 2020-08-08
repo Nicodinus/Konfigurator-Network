@@ -126,7 +126,7 @@ abstract class AbstractSession implements SessionInterface, ClassHasLogger
                 $self->getLogger()->debug("SEND packet: " . get_class($packet));
 
                 return yield $self->getNetworkHandler()->sendPacket(
-                    yield $self->getPacketHandler()->preparePacket($packet)
+                    yield $packet->transform()
                 );
 
             } catch (\Throwable $e) {
