@@ -25,11 +25,11 @@ interface PacketInterface
 
     /**
      * @param SessionInterface $session
-     * @param mixed ...$args
+     * @param mixed $packet
      *
-     * @return static
+     * @return Promise<static>
      */
-    public static function fromRemote(SessionInterface $session, ...$args);
+    public static function fromRemote(SessionInterface $session, $packet): Promise;
 
     /**
      * @return bool
