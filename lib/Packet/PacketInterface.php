@@ -16,6 +16,14 @@ interface PacketInterface
     public static function getId();
 
     /**
+     * @param SessionInterface $session
+     * @param bool $isRemote
+     *
+     * @return static
+     */
+    public static function create(SessionInterface $session, bool $isRemote = false);
+
+    /**
      * @return bool
      */
     public function isRemote(): bool;
@@ -24,7 +32,6 @@ interface PacketInterface
      * @return SessionInterface
      */
     public function getSession(): SessionInterface;
-
 
     /**
      * @return Promise<string>|Failure<\Throwable>
