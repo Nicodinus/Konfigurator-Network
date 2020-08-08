@@ -17,12 +17,19 @@ interface PacketInterface
 
     /**
      * @param SessionInterface $session
-     * @param bool $isRemote
      * @param mixed ...$args
      *
      * @return static
      */
-    public static function create(SessionInterface $session, bool $isRemote = false, ...$args);
+    public static function create(SessionInterface $session, ...$args);
+
+    /**
+     * @param SessionInterface $session
+     * @param mixed ...$args
+     *
+     * @return static
+     */
+    public static function fromRemote(SessionInterface $session, ...$args);
 
     /**
      * @return bool
