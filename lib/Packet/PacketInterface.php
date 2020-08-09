@@ -4,9 +4,8 @@
 namespace Konfigurator\Network\Packet;
 
 
-use Amp\Failure;
-use Amp\Promise;
 use Konfigurator\Network\Session\SessionInterface;
+use Konfigurator\Common\Enums\AccessLevelEnum;
 
 interface PacketInterface
 {
@@ -16,33 +15,12 @@ interface PacketInterface
     public static function getId();
 
     /**
-     * @param SessionInterface $session
-     * @param mixed ...$args
-     *
-     * @return static
+     * @return AccessLevelEnum|null
      */
-    public static function create(SessionInterface $session, ...$args);
-
-    /**
-     * @param SessionInterface $session
-     * @param mixed $packet
-     *
-     * @return Promise<static>
-     */
-    public static function fromRemote(SessionInterface $session, $packet): Promise;
-
-    /**
-     * @return bool
-     */
-    public function isRemote(): bool;
+    public static function accessRequired(): ?AccessLevelEnum;
 
     /**
      * @return SessionInterface
      */
     public function getSession(): SessionInterface;
-
-    /**
-     * @return Promise<string>|Failure<\Throwable>
-     */
-    public function transform(): Promise;
 }

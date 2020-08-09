@@ -7,7 +7,8 @@ namespace Konfigurator\Network\Session;
 use Amp\Failure;
 use Amp\Promise;
 use Amp\Socket\SocketAddress;
-use Konfigurator\Network\Packet\PacketInterface;
+use Konfigurator\Network\Packet\InputPacketInterface;
+use Konfigurator\Network\Packet\OutputPacketInterface;
 use Konfigurator\Network\Session\Auth\AuthGuardInterface;
 
 interface SessionInterface
@@ -23,23 +24,23 @@ interface SessionInterface
     public function isAlive(): bool;
 
     /**
-     * @param mixed $id
+     * @param mixed $inputPacketId
      *
-     * @return Promise<PacketInterface|null>|Failure<\Throwable>
+     * @return Promise<InputPacketInterface|null>|Failure<\Throwable>
      */
-    public function awaitPacket($id): Promise;
+    public function awaitPacket($inputPacketId): Promise;
 
     /**
-     * @return Promise<PacketInterface|null>
+     * @return Promise<InputPacketInterface|null>
      */
     public function awaitAnyPacket(): Promise;
 
     /**
-     * @param string $packet
+     * @param InputPacketInterface $inputPacket
      *
      * @return Promise<void>
      */
-    public function handlePacket(string $packet): Promise;
+    public function handlePacket(InputPacketInterface $inputPacket): Promise;
 
     /**
      * @return SessionStorageInterface
@@ -52,21 +53,21 @@ interface SessionInterface
     public function getAuthGuard(): AuthGuardInterface;
 
     /**
-     * @param mixed $id
+     * @param mixed $outputPacketId
      * @param mixed ...$args
      *
-     * @return PacketInterface
+     * @return OutputPacketInterface
      *
      * @throws \Throwable
      */
-    public function createPacket($id, ...$args): PacketInterface;
+    public function createPacket($outputPacketId, ...$args): OutputPacketInterface;
 
     /**
-     * @param PacketInterface $packet
+     * @param OutputPacketInterface $outputPacket
      *
      * @return Promise<void>|Failure<\Throwable>
      */
-    public function sendPacket(PacketInterface $packet): Promise;
+    public function sendPacket(OutputPacketInterface $outputPacket): Promise;
 
     /**
      * @return void

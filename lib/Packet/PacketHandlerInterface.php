@@ -11,28 +11,22 @@ use Konfigurator\Network\Session\SessionInterface;
 interface PacketHandlerInterface
 {
     /**
-     * @param SessionInterface $session
-     * @param string $rawPacket
-     *
-     * @return Promise<PacketInterface>|Failure<\Throwable>
+     * @return PacketRepositoryInterface
      */
-    public function handlePacket(SessionInterface $session, string $rawPacket): Promise;
+    public function getPacketRepository(): PacketRepositoryInterface;
 
     /**
      * @param SessionInterface $session
-     * @param mixed $id
-     * @param mixed ...$args
+     * @param mixed $inputPacket
      *
-     * @return PacketInterface
-     *
-     * @throws \Throwable
+     * @return Promise<InputPacketInterface>|Failure<\Throwable>
      */
-    public function createPacket(SessionInterface $session, $id, ...$args): PacketInterface;
+    public function handlePacket(SessionInterface $session, $inputPacket): Promise;
 
     /**
-     * @param mixed $id
+     * @param OutputPacketInterface $outputPacket
      *
-     * @return bool
+     * @return Promise<string>|Failure<\Throwable>
      */
-    public function isPacketExist($id): bool;
+    public function transform(OutputPacketInterface $outputPacket): Promise;
 }

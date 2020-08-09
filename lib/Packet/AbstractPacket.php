@@ -11,27 +11,14 @@ abstract class AbstractPacket implements PacketInterface
     /** @var SessionInterface */
     private SessionInterface $session;
 
-    /** @var bool */
-    private bool $isRemote;
-
 
     /**
-     * AbstractBasicPacket constructor.
+     * AbstractPacket constructor.
      * @param SessionInterface $session
-     * @param bool $isRemote
      */
-    public function __construct(SessionInterface $session, bool $isRemote = false)
+    protected function __construct(SessionInterface $session)
     {
         $this->session = $session;
-        $this->isRemote = $isRemote;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isRemote(): bool
-    {
-        return $this->isRemote;
     }
 
     /**
